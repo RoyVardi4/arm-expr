@@ -262,46 +262,10 @@ func TestExpr_map_default_values(t *testing.T) {
 	require.Equal(t, "", output)
 }
 
-func TestConstExpr_error_panic(t *testing.T) {
-	env := map[string]any{
-		"divide": func(a, b int) int { return a / b },
-	}
-
-	_, err := expr.Compile(
-		`divide(1, 0)`,
-		expr.Env(env),
-		expr.ConstExpr("divide"),
-	)
-	require.Error(t, err)
-	require.Equal(t, "compile error: integer divide by zero (1:1)\n | divide(1, 0)\n | ^", err.Error())
-}
-
 type divideError struct{ Message string }
 
 func (e divideError) Error() string {
 	return e.Message
-}
-
-func TestConstExpr_error_wrong_type(t *testing.T) {
-	env := map[string]any{
-		"divide": 0,
-	}
-	assert.Panics(t, func() {
-		_, _ = expr.Compile(
-			`1 + divide(1, 0)`,
-			expr.Env(env),
-			expr.ConstExpr("divide"),
-		)
-	})
-}
-
-func TestConstExpr_error_no_env(t *testing.T) {
-	assert.Panics(t, func() {
-		_, _ = expr.Compile(
-			`1 + divide(1, 0)`,
-			expr.ConstExpr("divide"),
-		)
-	})
 }
 
 var stringer = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()

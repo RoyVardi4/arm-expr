@@ -1,17 +1,12 @@
 package optimizer_test
 
 import (
-	"strings"
 	"testing"
 
 	"expr/internal/testify/assert"
 	"expr/internal/testify/require"
 
 	"expr"
-	"expr/ast"
-	"expr/conf"
-	"expr/optimizer"
-	"expr/parser"
 )
 
 func TestOptimize(t *testing.T) {
@@ -93,25 +88,4 @@ func TestOptimize_in_range_with_floats(t *testing.T) {
 	out, err := expr.Eval(`f in 1..3`, map[string]any{"f": 1.5})
 	require.NoError(t, err)
 	assert.Equal(t, false, out)
-}
-
-func TestOptimize_const_expr(t *testing.T) {
-	tree, err := parser.Parse(`toUpper("hello")`)
-	require.NoError(t, err)
-
-	env := map[string]any{
-		"toUpper": strings.ToUpper,
-	}
-
-	config := conf.New(env)
-	config.ConstExpr("toUpper")
-
-	err = optimizer.Optimize(&tree.Node, config)
-	require.NoError(t, err)
-
-	expected := &ast.ConstantNode{
-		Value: "HELLO",
-	}
-
-	assert.Equal(t, ast.Dump(expected), ast.Dump(tree.Node))
 }

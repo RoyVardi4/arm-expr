@@ -369,23 +369,6 @@ func Benchmark_callFast(b *testing.B) {
 	require.Equal(b, "fn_fast", out)
 }
 
-func Benchmark_callConstExpr(b *testing.B) {
-	program, err := expr.Compile(`Func()`, expr.Env(CallEnv{}), expr.ConstExpr("Func"))
-	require.NoError(b, err)
-
-	env := CallEnv{}
-
-	var out any
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		out, err = vm.Run(program, env)
-	}
-	b.StopTimer()
-
-	require.NoError(b, err)
-	require.Equal(b, "func", out)
-}
-
 func Benchmark_largeStructAccess(b *testing.B) {
 	type Env struct {
 		Data  [1024 * 1024 * 10]byte

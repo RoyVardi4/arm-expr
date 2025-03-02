@@ -34,14 +34,6 @@ func AllowUndefinedVariables() Option {
 	}
 }
 
-// ConstExpr defines func expression as constant. If all argument to this function is constants,
-// then it can be replaced by result of this func call on compile step.
-func ConstExpr(fn string) Option {
-	return func(c *conf.Config) {
-		c.ConstExpr(fn)
-	}
-}
-
 // AsAny tells the compiler to expect any result.
 func AsAny() Option {
 	return func(c *conf.Config) {

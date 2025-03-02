@@ -1,12 +1,10 @@
 package conf
 
 import (
-	"fmt"
 	"reflect"
 
 	"expr/ast"
 	"expr/checker/nature"
-	"expr/vm/runtime"
 )
 
 type Config struct {
@@ -17,7 +15,6 @@ type Config struct {
 	Optimize  bool
 	Strict    bool
 	Profile   bool
-	ConstFns  map[string]reflect.Value
 	Visitors  []ast.Visitor
 }
 
@@ -25,7 +22,6 @@ type Config struct {
 func CreateNew() *Config {
 	c := &Config{
 		Optimize: true,
-		ConstFns: make(map[string]reflect.Value),
 	}
 	return c
 }
@@ -41,17 +37,6 @@ func (c *Config) WithEnv(env any) {
 	c.Strict = true
 	c.EnvObject = env
 	c.Env = Env(env)
-}
-
-func (c *Config) ConstExpr(name string) {
-	if c.EnvObject == nil {
-		panic("no environment is specified for ConstExpr()")
-	}
-	fn := reflect.ValueOf(runtime.Fetch(c.EnvObject, name))
-	if fn.Kind() != reflect.Func {
-		panic(fmt.Errorf("const expression %q must be a function", name))
-	}
-	c.ConstFns[name] = fn
 }
 
 type Checker interface {
