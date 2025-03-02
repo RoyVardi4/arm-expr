@@ -50,13 +50,6 @@ func (n *ChainNode) String() string {
 func (n *MemberNode) String() string {
 	node := n.Node.String()
 
-	if n.Optional {
-		if str, ok := n.Property.(*StringNode); ok && utils.IsValidIdentifier(str.Value) {
-			return fmt.Sprintf("%s?.%s", node, str.Value)
-		} else {
-			return fmt.Sprintf("%s?.[%s]", node, n.Property.String())
-		}
-	}
 	if str, ok := n.Property.(*StringNode); ok && utils.IsValidIdentifier(str.Value) {
 		return fmt.Sprintf("%s.%s", node, str.Value)
 	}
@@ -82,14 +75,6 @@ func (n *CallNode) String() string {
 		arguments[i] = arg.String()
 	}
 	return fmt.Sprintf("%s(%s)", n.Callee.String(), strings.Join(arguments, ", "))
-}
-
-func (n *BuiltinNode) String() string {
-	arguments := make([]string, len(n.Arguments))
-	for i, arg := range n.Arguments {
-		arguments[i] = arg.String()
-	}
-	return fmt.Sprintf("%s(%s)", n.Name, strings.Join(arguments, ", "))
 }
 
 func (n *ArrayNode) String() string {

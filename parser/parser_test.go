@@ -198,15 +198,6 @@ world`},
 				Property: &StringNode{Value: "bar"}},
 		},
 		{
-			"len(foo)",
-			&BuiltinNode{
-				Name: "len",
-				Arguments: []Node{
-					&IdentifierNode{Value: "foo"},
-				},
-			},
-		},
-		{
 			"array[1:2]",
 			&SliceNode{Node: &IdentifierNode{Value: "array"},
 				From: &IntegerNode{Value: 1},
@@ -229,29 +220,6 @@ world`},
 		{
 			"[]",
 			&ArrayNode{},
-		},
-		{
-			`::split("a,b,c", ",")`,
-			&BuiltinNode{
-				Name: "split",
-				Arguments: []Node{
-					&StringNode{Value: "a,b,c"},
-					&StringNode{Value: ","},
-				},
-			},
-		},
-		{
-			`::split("a,b,c", ",")[0]`,
-			&MemberNode{
-				Node: &BuiltinNode{
-					Name: "split",
-					Arguments: []Node{
-						&StringNode{Value: "a,b,c"},
-						&StringNode{Value: ","},
-					},
-				},
-				Property: &IntegerNode{Value: 0},
-			},
 		},
 		{
 			`"hello"[1:3]`,
@@ -411,7 +379,6 @@ func TestParse_optional_chaining(t *testing.T) {
 					Node: &MemberNode{
 						Node:     &IdentifierNode{Value: "foo"},
 						Property: &StringNode{Value: "bar"},
-						Optional: true,
 					},
 					Property: &StringNode{Value: "baz"},
 				},
@@ -426,7 +393,6 @@ func TestParse_optional_chaining(t *testing.T) {
 						Property: &StringNode{Value: "bar"},
 					},
 					Property: &StringNode{Value: "baz"},
-					Optional: true,
 				},
 			},
 		},
@@ -437,10 +403,8 @@ func TestParse_optional_chaining(t *testing.T) {
 					Node: &MemberNode{
 						Node:     &IdentifierNode{Value: "foo"},
 						Property: &StringNode{Value: "bar"},
-						Optional: true,
 					},
 					Property: &StringNode{Value: "baz"},
-					Optional: true,
 				},
 			},
 		},
@@ -457,12 +421,10 @@ func TestParse_optional_chaining(t *testing.T) {
 							Node: &MemberNode{
 								Node:     &IdentifierNode{Value: "a"},
 								Property: &StringNode{Value: "b"},
-								Optional: true,
 							},
 						},
 					},
 					Property: &StringNode{Value: "baz"},
-					Optional: true,
 				},
 			},
 		},
@@ -475,7 +437,6 @@ func TestParse_optional_chaining(t *testing.T) {
 						Property: &StringNode{Value: "bar"},
 					},
 					Property: &IntegerNode{Value: 0},
-					Optional: true,
 				},
 			},
 		},

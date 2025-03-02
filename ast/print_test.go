@@ -95,7 +95,6 @@ func TestPrint_MemberNode(t *testing.T) {
 			Value: "a",
 		},
 		Property: &ast.StringNode{Value: "b c"},
-		Optional: true,
 	}
 	require.Equal(t, `a?.["b c"]`, node.String())
 }

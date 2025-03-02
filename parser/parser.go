@@ -13,15 +13,6 @@ import (
 	"expr/parser/utils"
 )
 
-type arg byte
-
-const (
-	expr arg = 1 << iota
-	predicate
-)
-
-const optional arg = 1 << 7
-
 type parser struct {
 	tokens  []Token
 	current Token
@@ -341,16 +332,11 @@ end:
 func (p *parser) parsePostfixExpression(node Node) Node {
 	postfixToken := p.current
 	for (postfixToken.Is(Operator) || postfixToken.Is(Bracket)) && p.err == nil {
-		optional := postfixToken.Value == "?."
-	parseToken:
-		if postfixToken.Value == "." || postfixToken.Value == "?." {
+		if postfixToken.Value == "." {
 			p.next()
 
 			propertyToken := p.current
-			if optional && propertyToken.Is(Bracket, "[") {
-				postfixToken = propertyToken
-				goto parseToken
-			}
+
 			p.next()
 
 			if propertyToken.Kind != Identifier &&
@@ -363,7 +349,6 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 			property.SetLocation(propertyToken.Location)
 
 			chainNode, isChain := node.(*ChainNode)
-			optional := postfixToken.Value == "?."
 
 			if isChain {
 				node = chainNode.Node
@@ -372,7 +357,6 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 			memberNode := &MemberNode{
 				Node:     node,
 				Property: property,
-				Optional: optional,
 			}
 			memberNode.SetLocation(propertyToken.Location)
 
@@ -387,7 +371,7 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 				node = memberNode
 			}
 
-			if isChain || optional {
+			if isChain {
 				node = &ChainNode{Node: node}
 			}
 
@@ -434,12 +418,8 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 					node = &MemberNode{
 						Node:     node,
 						Property: from,
-						Optional: optional,
 					}
 					node.SetLocation(postfixToken.Location)
-					if optional {
-						node = &ChainNode{Node: node}
-					}
 					p.expect(Bracket, "]")
 				}
 			}

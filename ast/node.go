@@ -137,7 +137,6 @@ type MemberNode struct {
 	base
 	Node     Node // Node of the member access. Like "foo" in "foo.bar".
 	Property Node // Property of the member access. For property access it is a StringNode.
-	Optional bool // If true then the member access is optional. Like "foo?.bar".
 	Method   bool
 }
 
@@ -157,15 +156,6 @@ type CallNode struct {
 	base
 	Callee    Node   // Node of the call. Like "foo" in "foo()".
 	Arguments []Node // Arguments of the call.
-}
-
-// BuiltinNode represents a builtin function call.
-type BuiltinNode struct {
-	base
-	Name      string // Name of the builtin function. Like "len" in "len(foo)".
-	Arguments []Node // Arguments of the builtin function.
-	Throws    bool   // If true then accessing a field or array index can throw an error. Used by optimizer.
-	Map       Node   // Used by optimizer to fold filter() and map() builtins.
 }
 
 // ArrayNode represents an array.

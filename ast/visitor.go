@@ -36,10 +36,6 @@ func Walk(node *Node, v Visitor) {
 		for i := range n.Arguments {
 			Walk(&n.Arguments[i], v)
 		}
-	case *BuiltinNode:
-		for i := range n.Arguments {
-			Walk(&n.Arguments[i], v)
-		}
 	case *ArrayNode:
 		for i := range n.Nodes {
 			Walk(&n.Nodes[i], v)
