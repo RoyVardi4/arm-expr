@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -19,6 +20,75 @@ import (
 	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/test/mock"
 )
+
+func toBool(value interface{}) (bool, error) {
+	switch v := value.(type) {
+	case bool:
+		return v, nil
+	default:
+		strValue := fmt.Sprintf("%v", v)
+		return strconv.ParseBool(strValue)
+	}
+}
+
+func TestExpr_roy(t *testing.T) {
+	env := map[string]any{
+		"and": func(args ...bool) bool {
+			for _, arg := range args {
+				if !arg {
+					return false
+				}
+			}
+			return true
+		},
+		"or": func(args ...bool) bool {
+			for _, arg := range args {
+				if arg {
+					return true
+				}
+			}
+			return false
+		},
+		"bool": func(val interface{}) bool {
+			boolVal, err := toBool(val)
+			if err != nil {
+				panic(err)
+			}
+			return boolVal
+		},
+		"not": func(val bool) bool {
+			return !val
+		},
+		"true":  func() bool { return true },
+		"false": func() bool { return false },
+		"if": func(cond bool, trueVal interface{}, falseVal interface{}) interface{} {
+			if cond {
+				return trueVal
+			}
+			return falseVal
+		},
+	}
+
+	tests := []struct {
+		code     string
+		expected any
+	}{
+		{`or(false, false, false)`, false},
+		{"if(not(false()), 'hiii', 'byeeee')", "hiii"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.code, func(t *testing.T) {
+			program, err := expr.Compile(tt.code, expr.Env(env), expr.DisableAllBuiltins())
+
+			require.NoError(t, err)
+
+			output, err := expr.Run(program, env)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, output)
+		})
+	}
+}
 
 func ExampleEval() {
 	output, err := expr.Eval("greet + name", map[string]any{

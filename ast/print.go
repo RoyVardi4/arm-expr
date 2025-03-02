@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/expr-lang/expr/parser/operator"
 	"github.com/expr-lang/expr/parser/utils"
 )
 
@@ -67,26 +66,6 @@ func (n *BinaryNode) String() string {
 
 	var lhs, rhs string
 	var lwrap, rwrap bool
-
-	if lb, ok := n.Left.(*BinaryNode); ok {
-		if operator.Less(lb.Operator, n.Operator) {
-			lwrap = true
-		}
-		if lb.Operator == "??" {
-			lwrap = true
-		}
-		if operator.IsBoolean(lb.Operator) && n.Operator != lb.Operator {
-			lwrap = true
-		}
-	}
-	if rb, ok := n.Right.(*BinaryNode); ok {
-		if operator.Less(rb.Operator, n.Operator) {
-			rwrap = true
-		}
-		if operator.IsBoolean(rb.Operator) && n.Operator != rb.Operator {
-			rwrap = true
-		}
-	}
 
 	if _, ok := n.Left.(*ConditionalNode); ok {
 		lwrap = true
