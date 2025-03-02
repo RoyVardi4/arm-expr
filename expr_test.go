@@ -69,7 +69,7 @@ func TestExpr_roy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.code, func(t *testing.T) {
-			program, err := expr.Compile(tt.code, expr.Env(env), expr.DisableAllBuiltins())
+			program, err := expr.Compile(tt.code, expr.Env(env))
 
 			require.NoError(t, err)
 

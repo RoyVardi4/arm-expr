@@ -5,27 +5,8 @@ import (
 	"reflect"
 	"time"
 
-	"expr"
 	"expr/ast"
-	"expr/conf"
 )
-
-// ValueGetter is a Patcher that allows custom types to be represented as standard go values for use with expr.
-// It also adds the `$patcher_value_getter` function to the program for efficiently calling matching interfaces.
-//
-// The purpose of this Patcher is to make it seamless to use custom types in expressions without the need to
-// first convert them to standard go values. It may also facilitate using already existing structs or maps as
-// environments when they contain compatible types.
-//
-// An example usage may be modeling a database record with columns that have varying data types and constraints.
-// In such an example you may have custom types that, beyond storing a simple value, such as an integer, may
-// contain metadata such as column type and if a value is specifically a NULL value.
-//
-// Use it directly as an Option to expr.Compile()
-var ValueGetter = expr.Option(func(c *conf.Config) {
-	c.Visitors = append(c.Visitors, patcher{})
-	//getValueFunc(c)
-})
 
 // A AnyValuer provides a generic function for a custom type to return standard go values.
 // It allows for returning a `nil` value but does not provide any type checking at expression compile.
@@ -146,49 +127,4 @@ func (patcher) Visit(node *ast.Node) {
 			}
 		}
 	}
-}
-
-func getValue(params ...any) (any, error) {
-	switch v := params[0].(type) {
-	case AnyValuer:
-		return v.AsAny(), nil
-	case BoolValuer:
-		return v.AsBool(), nil
-	case IntValuer:
-		return v.AsInt(), nil
-	case Int8Valuer:
-		return v.AsInt8(), nil
-	case Int16Valuer:
-		return v.AsInt16(), nil
-	case Int32Valuer:
-		return v.AsInt32(), nil
-	case Int64Valuer:
-		return v.AsInt64(), nil
-	case UintValuer:
-		return v.AsUint(), nil
-	case Uint8Valuer:
-		return v.AsUint8(), nil
-	case Uint16Valuer:
-		return v.AsUint16(), nil
-	case Uint32Valuer:
-		return v.AsUint32(), nil
-	case Uint64Valuer:
-		return v.AsUint64(), nil
-	case Float32Valuer:
-		return v.AsFloat32(), nil
-	case Float64Valuer:
-		return v.AsFloat64(), nil
-	case StringValuer:
-		return v.AsString(), nil
-	case TimeValuer:
-		return v.AsTime(), nil
-	case DurationValuer:
-		return v.AsDuration(), nil
-	case ArrayValuer:
-		return v.AsArray(), nil
-	case MapValuer:
-		return v.AsMap(), nil
-	}
-
-	return params[0], nil
 }

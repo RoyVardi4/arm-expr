@@ -1,11 +1,11 @@
 package checker
 
 import (
+	"expr/builtin"
 	"fmt"
 	"reflect"
 
 	"expr/ast"
-	"expr/builtin"
 	. "expr/checker/nature"
 	"expr/conf"
 	"expr/file"
@@ -109,17 +109,6 @@ type varScope struct {
 	nature Nature
 }
 
-type info struct {
-	method bool
-	fn     *builtin.Function
-
-	// elem is element type of array or map.
-	// Arrays created with type []any, but
-	// we would like to detect expressions
-	// like `42 in ["a"]` as invalid.
-	elem reflect.Type
-}
-
 func (v *checker) visit(node ast.Node) Nature {
 	var nt Nature
 	switch n := node.(type) {
@@ -180,21 +169,13 @@ func (v *checker) IdentifierNode(node *ast.IdentifierNode) Nature {
 		return unknown
 	}
 
-	return v.ident(node, node.Value, v.config.Env.Strict, true)
+	return v.ident(node, node.Value, v.config.Env.Strict)
 }
 
 // ident method returns type of environment variable, builtin or function.
-func (v *checker) ident(node ast.Node, name string, strict, builtins bool) Nature {
+func (v *checker) ident(node ast.Node, name string, strict bool) Nature {
 	if nt, ok := v.config.Env.Get(name); ok {
 		return nt
-	}
-	if builtins {
-		if fn, ok := v.config.Functions[name]; ok {
-			return Nature{Type: fn.Type(), Func: fn}
-		}
-		if fn, ok := v.config.Builtins[name]; ok {
-			return Nature{Type: fn.Type(), Func: fn}
-		}
 	}
 	if v.config.Strict && strict {
 		return v.error(node, "unknown name %v", name)
@@ -230,7 +211,7 @@ func (v *checker) MemberNode(node *ast.MemberNode) Nature {
 	// $env variable
 	if an, ok := node.Node.(*ast.IdentifierNode); ok && an.Value == "$env" {
 		if name, ok := node.Property.(*ast.StringNode); ok {
-			return v.ident(node, name.Value, v.config.Strict, false /* no builtins and no functions */)
+			return v.ident(node, name.Value, v.config.Strict)
 		}
 		return unknown
 	}

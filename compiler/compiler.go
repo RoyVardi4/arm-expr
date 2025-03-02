@@ -533,14 +533,6 @@ func (c *compiler) CallNode(node *ast.CallNode) {
 		}
 	}
 
-	if ident, ok := node.Callee.(*ast.IdentifierNode); ok {
-		if c.config != nil {
-			if fn, ok := c.config.Functions[ident.Value]; ok {
-				c.emitFunction(fn, len(node.Arguments))
-				return
-			}
-		}
-	}
 	c.compile(node.Callee)
 
 	isMethod, _, _ := checker.MethodIndex(c.config.Env, node.Callee)

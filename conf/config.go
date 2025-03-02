@@ -22,22 +22,13 @@ type Config struct {
 	Profile   bool
 	ConstFns  map[string]reflect.Value
 	Visitors  []ast.Visitor
-	Functions FunctionsTable
-	Builtins  FunctionsTable
-	Disabled  map[string]bool // disabled builtins
 }
 
 // CreateNew creates new config with default values.
 func CreateNew() *Config {
 	c := &Config{
-		Optimize:  true,
-		ConstFns:  make(map[string]reflect.Value),
-		Functions: make(map[string]*builtin.Function),
-		Builtins:  make(map[string]*builtin.Function),
-		Disabled:  make(map[string]bool),
-	}
-	for _, f := range builtin.Builtins {
-		c.Builtins[f.Name] = f
+		Optimize: true,
+		ConstFns: make(map[string]reflect.Value),
 	}
 	return c
 }
@@ -76,14 +67,4 @@ func (c *Config) Check() {
 			c.Check()
 		}
 	}
-}
-
-func (c *Config) IsOverridden(name string) bool {
-	if _, ok := c.Functions[name]; ok {
-		return true
-	}
-	if _, ok := c.Env.Get(name); ok {
-		return true
-	}
-	return false
 }

@@ -28,9 +28,7 @@ type Tree struct {
 }
 
 func Parse(input string) (*Tree, error) {
-	return ParseWithConfig(input, &conf.Config{
-		Disabled: map[string]bool{},
-	})
+	return ParseWithConfig(input, &conf.Config{})
 }
 
 func ParseWithConfig(input string, config *conf.Config) (*Tree, error) {

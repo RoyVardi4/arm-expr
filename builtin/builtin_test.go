@@ -365,47 +365,6 @@ func TestBuiltin_override_and_still_accessible(t *testing.T) {
 	assert.Equal(t, true, out)
 }
 
-func TestBuiltin_DisableBuiltin(t *testing.T) {
-	t.Run("via env", func(t *testing.T) {
-		for _, b := range builtin.Builtins {
-			if b.Predicate {
-				continue // TODO: allow to disable predicates
-			}
-			t.Run(b.Name, func(t *testing.T) {
-				env := map[string]any{
-					b.Name: func() int { return 42 },
-				}
-				program, err := expr.Compile(b.Name+"()", expr.Env(env), expr.DisableBuiltin(b.Name))
-				require.NoError(t, err)
-
-				out, err := expr.Run(program, env)
-				require.NoError(t, err)
-				assert.Equal(t, 42, out)
-			})
-		}
-	})
-}
-
-func TestBuiltin_DisableAllBuiltins(t *testing.T) {
-	_, err := expr.Compile(`len("foo")`, expr.Env(nil), expr.DisableAllBuiltins())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown name len")
-}
-
-func TestBuiltin_EnableBuiltin(t *testing.T) {
-	t.Run("via env", func(t *testing.T) {
-		env := map[string]any{
-			"repeat": func() string { return "repeat" },
-		}
-		program, err := expr.Compile(`len(repeat())`, expr.Env(env), expr.DisableAllBuiltins(), expr.EnableBuiltin("len"))
-		require.NoError(t, err)
-
-		out, err := expr.Run(program, env)
-		require.NoError(t, err)
-		assert.Equal(t, 6, out)
-	})
-}
-
 func TestBuiltin_type(t *testing.T) {
 	type Foo struct{}
 	var b any = 1

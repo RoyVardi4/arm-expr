@@ -3,6 +3,7 @@ package vm
 //go:generate sh -c "go run ./func_types > ./func_types[generated].go"
 
 import (
+	"expr/builtin"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"expr/builtin"
 	"expr/file"
 	"expr/internal/deref"
 	"expr/vm/runtime"
