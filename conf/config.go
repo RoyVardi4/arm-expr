@@ -5,12 +5,9 @@ import (
 	"reflect"
 
 	"expr/ast"
-	"expr/builtin"
 	"expr/checker/nature"
 	"expr/vm/runtime"
 )
-
-type FunctionsTable map[string]*builtin.Function
 
 type Config struct {
 	EnvObject any

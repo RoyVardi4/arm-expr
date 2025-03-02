@@ -3,7 +3,6 @@ package nature
 import (
 	"reflect"
 
-	"expr/builtin"
 	"expr/internal/deref"
 )
 
@@ -13,7 +12,6 @@ var (
 
 type Nature struct {
 	Type            reflect.Type      // Type of the value. If nil, then value is unknown.
-	Func            *builtin.Function // Used to pass function type from callee to CallNode.
 	ArrayOf         *Nature           // Elem nature of array type (usually Type is []any, but ArrayOf can be any nature).
 	PredicateOut    *Nature           // Out nature of predicate.
 	Fields          map[string]Nature // Fields of map type.

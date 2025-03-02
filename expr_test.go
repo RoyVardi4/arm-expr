@@ -26,6 +26,11 @@ func toBool(value interface{}) (bool, error) {
 
 func TestExpr_roy(t *testing.T) {
 	env := map[string]any{
+		"foo": map[string]any{
+			"bar": map[string]any{
+				"yes": true,
+			},
+		},
 		"and": func(args ...bool) bool {
 			for _, arg := range args {
 				if !arg {
@@ -65,6 +70,7 @@ func TestExpr_roy(t *testing.T) {
 	tests := []struct{ code string }{
 		{`or(false, false, false)`},
 		{"if(not(false()), false, 'byeeee')"},
+		{"if(foo.bar['yes'], false, true)"},
 	}
 
 	for _, tt := range tests {
@@ -561,16 +567,6 @@ func TestIssue432(t *testing.T) {
 	out, err := expr.Run(program, env)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(10), out)
-}
-
-func TestIssue462(t *testing.T) {
-	env := map[string]any{
-		"foo": func() (string, error) {
-			return "bar", nil
-		},
-	}
-	_, err := expr.Compile(`$env.unknown(int())`, expr.Env(env))
-	require.Error(t, err)
 }
 
 func TestIssue_integer_truncated_by_compiler(t *testing.T) {

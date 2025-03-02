@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"expr/ast"
-	"expr/builtin"
 	"expr/checker"
 	. "expr/checker/nature"
 	"expr/conf"
@@ -151,44 +150,6 @@ func (c *compiler) addConstant(constant any) int {
 	if indexable {
 		c.constantsIndex[hash] = p
 	}
-	return p
-}
-
-func (c *compiler) addVariable(name string) int {
-	c.variables++
-	c.debugInfo[fmt.Sprintf("var_%d", c.variables-1)] = name
-	return c.variables - 1
-}
-
-// emitFunction adds builtin.Function.Func to the program.functions and emits call opcode.
-func (c *compiler) emitFunction(fn *builtin.Function, argsLen int) {
-	switch argsLen {
-	case 0:
-		c.emit(OpCall0, c.addFunction(fn.Name, fn.Func))
-	case 1:
-		c.emit(OpCall1, c.addFunction(fn.Name, fn.Func))
-	case 2:
-		c.emit(OpCall2, c.addFunction(fn.Name, fn.Func))
-	case 3:
-		c.emit(OpCall3, c.addFunction(fn.Name, fn.Func))
-	default:
-		c.emit(OpLoadFunc, c.addFunction(fn.Name, fn.Func))
-		c.emit(OpCallN, argsLen)
-	}
-}
-
-// addFunction adds builtin.Function.Func to the program.functions and returns its index.
-func (c *compiler) addFunction(name string, fn Function) int {
-	if fn == nil {
-		panic("function is nil")
-	}
-	if p, ok := c.functionsIndex[name]; ok {
-		return p
-	}
-	p := len(c.functions)
-	c.functions = append(c.functions, fn)
-	c.functionsIndex[name] = p
-	c.debugInfo[fmt.Sprintf("func_%d", p)] = name
 	return p
 }
 

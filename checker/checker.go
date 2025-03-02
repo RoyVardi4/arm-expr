@@ -1,7 +1,6 @@
 package checker
 
 import (
-	"expr/builtin"
 	"fmt"
 	"reflect"
 
@@ -172,7 +171,6 @@ func (v *checker) IdentifierNode(node *ast.IdentifierNode) Nature {
 	return v.ident(node, node.Value, v.config.Env.Strict)
 }
 
-// ident method returns type of environment variable, builtin or function.
 func (v *checker) ident(node ast.Node, name string, strict bool) Nature {
 	if nt, ok := v.config.Env.Get(name); ok {
 		return nt
@@ -208,14 +206,6 @@ func (v *checker) ChainNode(node *ast.ChainNode) Nature {
 }
 
 func (v *checker) MemberNode(node *ast.MemberNode) Nature {
-	// $env variable
-	if an, ok := node.Node.(*ast.IdentifierNode); ok && an.Value == "$env" {
-		if name, ok := node.Property.(*ast.StringNode); ok {
-			return v.ident(node, name.Value, v.config.Strict)
-		}
-		return unknown
-	}
-
 	base := v.visit(node.Node)
 	prop := v.visit(node.Property)
 
@@ -328,10 +318,6 @@ func (v *checker) CallNode(node *ast.CallNode) Nature {
 func (v *checker) functionReturnType(node *ast.CallNode) Nature {
 	nt := v.visit(node.Callee)
 
-	if nt.Func != nil {
-		return v.checkFunction(nt.Func, node, node.Arguments)
-	}
-
 	fnName := "function"
 	if identifier, ok := node.Callee.(*ast.IdentifierNode); ok {
 		fnName = identifier.Value
@@ -379,52 +365,6 @@ func (v *checker) begin(collectionNature Nature, vars ...scopeVar) {
 
 func (v *checker) end() {
 	v.predicateScopes = v.predicateScopes[:len(v.predicateScopes)-1]
-}
-
-func (v *checker) checkFunction(f *builtin.Function, node ast.Node, arguments []ast.Node) Nature {
-	if f.Validate != nil {
-		args := make([]reflect.Type, len(arguments))
-		for i, arg := range arguments {
-			argNature := v.visit(arg)
-			if isUnknown(argNature) {
-				args[i] = anyType
-			} else {
-				args[i] = argNature.Type
-			}
-		}
-		t, err := f.Validate(args)
-		if err != nil {
-			return v.error(node, "%v", err)
-		}
-		return Nature{Type: t}
-	} else if len(f.Types) == 0 {
-		nt, err := v.checkArguments(f.Name, Nature{Type: f.Type()}, arguments, node)
-		if err != nil {
-			if v.err == nil {
-				v.err = err
-			}
-			return unknown
-		}
-		// No type was specified, so we assume the function returns any.
-		return nt
-	}
-	var lastErr *file.Error
-	for _, t := range f.Types {
-		outNature, err := v.checkArguments(f.Name, Nature{Type: t}, arguments, node)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		return outNature
-	}
-	if lastErr != nil {
-		if v.err == nil {
-			v.err = lastErr
-		}
-		return unknown
-	}
-
-	return v.error(node, "no matching overload for %v", f.Name)
 }
 
 func (v *checker) checkArguments(

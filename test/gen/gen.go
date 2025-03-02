@@ -8,7 +8,6 @@ import (
 
 	"expr"
 	"expr/ast"
-	"expr/builtin"
 )
 
 var env = map[string]any{
@@ -47,39 +46,7 @@ func (f Foo) Qux(s string) string {
 }
 
 var (
-	dict       []string
-	predicates []string
-	builtins   []string
-	operators  = []string{
-		"or",
-		"||",
-		"and",
-		"&&",
-		"==",
-		"!=",
-		"<",
-		">",
-		">=",
-		"<=",
-		"..",
-		"+",
-		"-",
-		"*",
-		"/",
-		"%",
-		"**",
-		"^",
-		"in",
-		"matches",
-		"contains",
-		"startsWith",
-		"endsWith",
-		"not in",
-		"not matches",
-		"not contains",
-		"not startsWith",
-		"not endsWith",
-	}
+	dict []string
 )
 
 func init() {
@@ -98,13 +65,6 @@ func init() {
 			for _, key := range v.MapKeys() {
 				dict = append(dict, fmt.Sprintf("%v", key.Interface()))
 			}
-		}
-	}
-	for _, b := range builtin.Builtins {
-		if b.Predicate {
-			predicates = append(predicates, b.Name)
-		} else {
-			builtins = append(builtins, b.Name)
 		}
 	}
 }
