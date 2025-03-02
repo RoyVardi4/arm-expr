@@ -546,55 +546,6 @@ func (c *compiler) CallNode(node *ast.CallNode) {
 	}
 }
 
-func (c *compiler) emitCond(body func()) {
-	noop := c.emit(OpJumpIfFalse, placeholder)
-	c.emit(OpPop)
-
-	body()
-
-	jmp := c.emit(OpJump, placeholder)
-	c.patchJump(noop)
-	c.emit(OpPop)
-	c.patchJump(jmp)
-}
-
-func (c *compiler) emitLoop(body func()) {
-	begin := len(c.bytecode)
-	end := c.emit(OpJumpIfEnd, placeholder)
-
-	body()
-
-	c.emit(OpIncrementIndex)
-	c.emit(OpJumpBackward, c.calcBackwardJump(begin))
-	c.patchJump(end)
-}
-
-func (c *compiler) emitLoopBackwards(body func()) {
-	c.emit(OpGetLen)
-	c.emit(OpInt, 1)
-	c.emit(OpSubtract)
-	c.emit(OpSetIndex)
-	begin := len(c.bytecode)
-	c.emit(OpGetIndex)
-	c.emit(OpInt, 0)
-	c.emit(OpMoreOrEqual)
-	end := c.emit(OpJumpIfFalse, placeholder)
-
-	body()
-
-	c.emit(OpDecrementIndex)
-	c.emit(OpJumpBackward, c.calcBackwardJump(begin))
-	c.patchJump(end)
-}
-
-func (c *compiler) beginScope(name string, index int) {
-	c.scopes = append(c.scopes, scope{name, index})
-}
-
-func (c *compiler) endScope() {
-	c.scopes = c.scopes[:len(c.scopes)-1]
-}
-
 func (c *compiler) lookupVariable(name string) (int, bool) {
 	for i := len(c.scopes) - 1; i >= 0; i-- {
 		if c.scopes[i].variableName == name {
@@ -625,16 +576,6 @@ func (c *compiler) MapNode(node *ast.MapNode) {
 func (c *compiler) PairNode(node *ast.PairNode) {
 	c.compile(node.Key)
 	c.compile(node.Value)
-}
-
-func (c *compiler) derefInNeeded(node ast.Node) {
-	if node.Nature().Nil {
-		return
-	}
-	switch node.Type().Kind() {
-	case reflect.Ptr, reflect.Interface:
-		c.emit(OpDeref)
-	}
 }
 
 func (c *compiler) optimize() {
