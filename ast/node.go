@@ -104,18 +104,6 @@ type StringNode struct {
 	Value string // Value of the string.
 }
 
-// ChainNode represents an optional chaining group.
-// A few MemberNode nodes can be chained together,
-// and will be wrapped in a ChainNode. Example:
-//
-//	foo.bar?.baz?.qux
-//
-// The whole chain will be wrapped in a ChainNode.
-type ChainNode struct {
-	base
-	Node Node // Node of the chain.
-}
-
 // MemberNode represents a member access.
 // It can be a field access, a method call,
 // or an array element access.

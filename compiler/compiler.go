@@ -200,8 +200,6 @@ func (c *compiler) compile(node ast.Node) {
 		c.BoolNode(n)
 	case *ast.StringNode:
 		c.StringNode(n)
-	case *ast.ChainNode:
-		c.ChainNode(n)
 	case *ast.MemberNode:
 		c.MemberNode(n)
 	case *ast.CallNode:
@@ -334,23 +332,6 @@ func (c *compiler) BoolNode(node *ast.BoolNode) {
 
 func (c *compiler) StringNode(node *ast.StringNode) {
 	c.emitPush(node.Value)
-}
-
-func (c *compiler) ChainNode(node *ast.ChainNode) {
-	c.chains = append(c.chains, []int{})
-	c.compile(node.Node)
-	for _, ph := range c.chains[len(c.chains)-1] {
-		c.patchJump(ph) // If chain activated jump here (got nit somewhere).
-	}
-
-	// We need to put the nil on the stack, otherwise "typed"
-	// nil will be used as a result of the chain.
-	j := c.emit(OpJumpIfNotNil, placeholder)
-	c.emit(OpPop)
-	c.emit(OpNil)
-	c.patchJump(j)
-
-	c.chains = c.chains[:len(c.chains)-1]
 }
 
 func (c *compiler) MemberNode(node *ast.MemberNode) {

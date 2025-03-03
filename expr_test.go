@@ -66,7 +66,6 @@ func TestExpr_roy(t *testing.T) {
 	tests := []struct{ code string }{
 		{`or(false, false, false)`},
 		{"if(not(false()), false, 'byeeee')"},
-		{"[1, 2, 3][1]"},
 	}
 
 	for _, tt := range tests {

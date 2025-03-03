@@ -346,12 +346,6 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 			property := &StringNode{Value: propertyToken.Value}
 			property.SetLocation(propertyToken.Location)
 
-			chainNode, isChain := node.(*ChainNode)
-
-			if isChain {
-				node = chainNode.Node
-			}
-
 			memberNode := &MemberNode{
 				Node:     node,
 				Property: property,
@@ -368,11 +362,6 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 			} else {
 				node = memberNode
 			}
-
-			if isChain {
-				node = &ChainNode{Node: node}
-			}
-
 		} else if postfixToken.Value == "[" {
 			p.next()
 			var property Node

@@ -102,8 +102,6 @@ func (v *checker) visit(node ast.Node) Nature {
 		nt = v.BoolNode(n)
 	case *ast.StringNode:
 		nt = v.StringNode(n)
-	case *ast.ChainNode:
-		nt = v.ChainNode(n)
 	case *ast.MemberNode:
 		nt = v.MemberNode(n)
 	case *ast.CallNode:
@@ -170,10 +168,6 @@ func (v *checker) BoolNode(*ast.BoolNode) Nature {
 
 func (v *checker) StringNode(*ast.StringNode) Nature {
 	return stringNature
-}
-
-func (v *checker) ChainNode(node *ast.ChainNode) Nature {
-	return v.visit(node.Node)
 }
 
 func (v *checker) MemberNode(node *ast.MemberNode) Nature {

@@ -31,10 +31,6 @@ func (n *StringNode) String() string {
 	return fmt.Sprintf("%q", n.Value)
 }
 
-func (n *ChainNode) String() string {
-	return n.Node.String()
-}
-
 func (n *MemberNode) String() string {
 	node := n.Node.String()
 
