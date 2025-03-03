@@ -48,14 +48,6 @@ func (n *CallNode) String() string {
 	return fmt.Sprintf("%s(%s)", n.Callee.String(), strings.Join(arguments, ", "))
 }
 
-func (n *ArrayNode) String() string {
-	nodes := make([]string, len(n.Nodes))
-	for i, node := range n.Nodes {
-		nodes[i] = node.String()
-	}
-	return fmt.Sprintf("[%s]", strings.Join(nodes, ", "))
-}
-
 func (n *MapNode) String() string {
 	pairs := make([]string, len(n.Pairs))
 	for i, pair := range n.Pairs {

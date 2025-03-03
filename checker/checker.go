@@ -106,8 +106,6 @@ func (v *checker) visit(node ast.Node) Nature {
 		nt = v.MemberNode(n)
 	case *ast.CallNode:
 		nt = v.CallNode(n)
-	case *ast.ArrayNode:
-		nt = v.ArrayNode(n)
 	case *ast.MapNode:
 		nt = v.MapNode(n)
 	case *ast.PairNode:
@@ -443,24 +441,6 @@ func (v *checker) lookupVariable(name string) (varScope, bool) {
 		}
 	}
 	return varScope{}, false
-}
-
-func (v *checker) ArrayNode(node *ast.ArrayNode) Nature {
-	var prev Nature
-	allElementsAreSameType := true
-	for i, node := range node.Nodes {
-		curr := v.visit(node)
-		if i > 0 {
-			if curr.Kind() != prev.Kind() {
-				allElementsAreSameType = false
-			}
-		}
-		prev = curr
-	}
-	if allElementsAreSameType {
-		return arrayOf(prev)
-	}
-	return arrayNature
 }
 
 func (v *checker) MapNode(node *ast.MapNode) Nature {

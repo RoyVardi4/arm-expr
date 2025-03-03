@@ -204,8 +204,6 @@ func (c *compiler) compile(node ast.Node) {
 		c.MemberNode(n)
 	case *ast.CallNode:
 		c.CallNode(n)
-	case *ast.ArrayNode:
-		c.ArrayNode(n)
 	case *ast.MapNode:
 		c.MapNode(n)
 	case *ast.PairNode:
@@ -454,15 +452,6 @@ func (c *compiler) lookupVariable(name string) (int, bool) {
 		}
 	}
 	return 0, false
-}
-
-func (c *compiler) ArrayNode(node *ast.ArrayNode) {
-	for _, node := range node.Nodes {
-		c.compile(node)
-	}
-
-	c.emitPush(len(node.Nodes))
-	c.emit(OpArray)
 }
 
 func (c *compiler) MapNode(node *ast.MapNode) {

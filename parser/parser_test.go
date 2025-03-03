@@ -159,21 +159,6 @@ world`},
 				},
 				Property: &IntegerNode{Value: 33}},
 		},
-		{
-			"[a, b, c]",
-			&ArrayNode{Nodes: []Node{&IdentifierNode{Value: "a"},
-				&IdentifierNode{Value: "b"},
-				&IdentifierNode{Value: "c"}}},
-		},
-		{
-			"[1].foo",
-			&MemberNode{Node: &ArrayNode{Nodes: []Node{&IntegerNode{Value: 1}}},
-				Property: &StringNode{Value: "foo"}},
-		},
-		{
-			"[]",
-			&ArrayNode{},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {

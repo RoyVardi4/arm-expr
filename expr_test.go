@@ -63,9 +63,13 @@ func TestExpr_roy(t *testing.T) {
 		},
 	}
 
-	tests := []struct{ code string }{
-		{`or(false, false, false)`},
-		{"if(not(false()), false, 'byeeee')"},
+	tests := []struct {
+		code string
+		want any
+	}{
+		{`or(false, false, false)`, false},
+		{"if(not(false()), false, 'byeeee')", false},
+		{"foo.bar[0]", "hello"},
 	}
 
 	for _, tt := range tests {
@@ -76,7 +80,7 @@ func TestExpr_roy(t *testing.T) {
 
 			output, err := expr.Run(program, env)
 			require.NoError(t, err)
-			require.Equal(t, false, output)
+			require.Equal(t, tt.want, output)
 		})
 	}
 }
@@ -159,17 +163,6 @@ func ExampleAsFloat64() {
 	fmt.Printf("%v", output.(float64))
 
 	// Output: 42
-}
-
-func ExampleWarnOnAny() {
-	// Arrays always have []any type. The expression return type is any.
-	// AsInt() instructs compiler to expect int or any, and cast to int,
-	// if possible. WarnOnAny() instructs to return an error on any type.
-	_, err := expr.Compile(`[42, true, "yes"][0]`, expr.AsInt(), expr.WarnOnAny())
-
-	fmt.Printf("%v", err)
-
-	// Output: expected int, but got interface {}
 }
 
 func fib(n int) int {

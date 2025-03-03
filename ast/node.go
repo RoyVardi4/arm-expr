@@ -126,12 +126,6 @@ type CallNode struct {
 	Arguments []Node // Arguments of the call.
 }
 
-// ArrayNode represents an array.
-type ArrayNode struct {
-	base
-	Nodes []Node // Nodes of the array.
-}
-
 // MapNode represents a map.
 type MapNode struct {
 	base

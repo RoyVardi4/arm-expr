@@ -198,9 +198,7 @@ func (p *parser) parseSecondary() Node {
 		node.SetLocation(token.Location)
 
 	default:
-		if token.Is(Bracket, "[") {
-			node = p.parseArrayExpression(token)
-		} else if token.Is(Bracket, "{") {
+		if token.Is(Bracket, "{") {
 			node = p.parseMapExpression(token)
 		} else {
 			p.error("unexpected token %v", token)
@@ -256,28 +254,6 @@ func (p *parser) parseArguments(arguments []Node) []Node {
 	p.expect(Bracket, ")")
 
 	return arguments
-}
-
-func (p *parser) parseArrayExpression(token Token) Node {
-	nodes := make([]Node, 0)
-
-	p.expect(Bracket, "[")
-	for !p.current.Is(Bracket, "]") && p.err == nil {
-		if len(nodes) > 0 {
-			p.expect(Operator, ",")
-			if p.current.Is(Bracket, "]") {
-				goto end
-			}
-		}
-		node := p.parseExpression()
-		nodes = append(nodes, node)
-	}
-end:
-	p.expect(Bracket, "]")
-
-	node := &ArrayNode{Nodes: nodes}
-	node.SetLocation(token.Location)
-	return node
 }
 
 func (p *parser) parseMapExpression(token Token) Node {
