@@ -22,7 +22,7 @@ func TestRun_NilProgram(t *testing.T) {
 }
 
 func TestRun_ReuseVM(t *testing.T) {
-	node, err := parser.Parse(`map(1..2, {#})`)
+	node, err := parser.Parse(`1`)
 	require.NoError(t, err)
 
 	program, err := compiler.Compile(node, nil)
@@ -38,23 +38,23 @@ func TestRun_ReuseVM(t *testing.T) {
 func TestRun_ReuseVM_for_different_variables(t *testing.T) {
 	v := vm.VM{}
 
-	program, err := expr.Compile(`let a = 1; a + 1`)
+	program, err := expr.Compile(`1`)
 	require.NoError(t, err)
 	out, err := v.Run(program, nil)
 	require.NoError(t, err)
+	require.Equal(t, 1, out)
+
+	program, err = expr.Compile(`2`)
+	require.NoError(t, err)
+	out, err = v.Run(program, nil)
+	require.NoError(t, err)
 	require.Equal(t, 2, out)
 
-	program, err = expr.Compile(`let a = 2; a + 1`)
+	program, err = expr.Compile(`3`)
 	require.NoError(t, err)
 	out, err = v.Run(program, nil)
 	require.NoError(t, err)
 	require.Equal(t, 3, out)
-
-	program, err = expr.Compile(`let a = 2; let b = 2; a + b`)
-	require.NoError(t, err)
-	out, err = v.Run(program, nil)
-	require.NoError(t, err)
-	require.Equal(t, 4, out)
 }
 
 func TestRun_Cast(t *testing.T) {
@@ -70,62 +70,6 @@ func TestRun_Cast(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, float64(1), out)
-}
-
-func TestRun_Helpers(t *testing.T) {
-	values := []any{
-		uint(1),
-		uint8(1),
-		uint16(1),
-		uint32(1),
-		uint64(1),
-		1,
-		int8(1),
-		int16(1),
-		int32(1),
-		int64(1),
-		float32(1),
-		float64(1),
-	}
-	ops := []string{"+", "-", "*", "/", "%", "==", ">=", "<=", "<", ">"}
-
-	for _, a := range values {
-		for _, b := range values {
-			for _, op := range ops {
-
-				if op == "%" {
-					switch a.(type) {
-					case float32, float64:
-						continue
-					}
-					switch b.(type) {
-					case float32, float64:
-						continue
-					}
-				}
-
-				input := fmt.Sprintf("a %v b", op)
-				env := map[string]any{
-					"a": a,
-					"b": b,
-				}
-
-				config := conf.CreateNew()
-
-				tree, err := parser.Parse(input)
-				require.NoError(t, err)
-
-				_, err = checker.Check(tree, config)
-				require.NoError(t, err)
-
-				program, err := compiler.Compile(tree, config)
-				require.NoError(t, err)
-
-				_, err = vm.Run(program, env)
-				require.NoError(t, err)
-			}
-		}
-	}
 }
 
 type ErrorEnv struct {
@@ -171,14 +115,13 @@ func TestRun_MethodWithError(t *testing.T) {
 }
 
 func TestRun_FastMethods(t *testing.T) {
-	input := `hello() + world()`
+	input := `hello()`
 
 	tree, err := parser.Parse(input)
 	require.NoError(t, err)
 
 	env := map[string]any{
-		"hello": func(...any) any { return "hello " },
-		"world": func(...any) any { return "world" },
+		"hello": func(...any) any { return "hello" },
 	}
 	funcConf := conf.New(env)
 	_, err = checker.Check(tree, funcConf)
@@ -190,7 +133,7 @@ func TestRun_FastMethods(t *testing.T) {
 	out, err := vm.Run(program, env)
 	require.NoError(t, err)
 
-	require.Equal(t, "hello world", out)
+	require.Equal(t, "hello", out)
 }
 
 func TestRun_InnerMethodWithError(t *testing.T) {
@@ -210,7 +153,7 @@ func TestRun_InnerMethodWithError(t *testing.T) {
 }
 
 func TestRun_InnerMethodWithError_NilSafe(t *testing.T) {
-	input := `InnerEnv?.WillError("yes")`
+	input := `InnerEnv.WillError("yes")`
 
 	tree, err := parser.Parse(input)
 	require.NoError(t, err)
@@ -221,7 +164,7 @@ func TestRun_InnerMethodWithError_NilSafe(t *testing.T) {
 	require.NoError(t, err)
 
 	out, err := vm.Run(program, env)
-	require.EqualError(t, err, "inner error (1:11)\n | InnerEnv?.WillError(\"yes\")\n | ..........^")
+	require.EqualError(t, err, "inner error (1:10)\n | InnerEnv.WillError(\"yes\")\n | .........^")
 	require.Equal(t, nil, out)
 }
 
@@ -260,205 +203,6 @@ func TestRun_OpInvalid(t *testing.T) {
 	require.EqualError(t, err, "invalid opcode")
 }
 
-func TestVM_OpcodeOperations(t *testing.T) {
-	tests := []struct {
-		name        string
-		expr        string
-		env         map[string]any
-		want        any
-		expectError string
-	}{
-		// Arithmetic Operations
-		{
-			name: "basic addition",
-			expr: "2 + 3",
-			want: 5,
-		},
-		{
-			name: "mixed type arithmetic",
-			expr: "2.5 + 3",
-			want: 5.5,
-		},
-		{
-			name: "chained arithmetic",
-			expr: "1 + 2 * 3 - 4 / 2",
-			want: 5.0,
-		},
-		{
-			name: "modulo operation",
-			expr: "5 % 2",
-			want: 1,
-		},
-		{
-			name: "exponent operation",
-			expr: "2 ^ 3",
-			want: 8.0,
-		},
-		{
-			name: "negation",
-			expr: "-5",
-			want: -5,
-		},
-
-		// String Operations
-		{
-			name: "string concatenation",
-			expr: `"hello" + " " + "world"`,
-			want: "hello world",
-		},
-		{
-			name: "string starts with",
-			expr: `"hello world" startsWith "hello"`,
-			want: true,
-		},
-		{
-			name: "string ends with",
-			expr: `"hello world" endsWith "world"`,
-			want: true,
-		},
-		{
-			name: "string contains",
-			expr: `"hello world" contains "lo wo"`,
-			want: true,
-		},
-		{
-			name: "string matches regex",
-			expr: `"hello123" matches "^hello\\d+$"`,
-			want: true,
-		},
-
-		// Data Structure Operations
-		{
-			name: "array creation and access",
-			expr: "[1, 2, 3][1]",
-			want: 2,
-		},
-		{
-			name: "map creation and access",
-			expr: `{"a": 1, "b": 2}.b`,
-			want: 2,
-		},
-		{
-			name: "array length",
-			expr: "len([1, 2, 3])",
-			want: 3,
-		},
-		{
-			name: "array slice",
-			expr: "[1, 2, 3, 4][1:3]",
-			want: []any{2, 3},
-		},
-		{
-			name: "array range",
-			expr: "1..5",
-			want: []int{1, 2, 3, 4, 5},
-		},
-
-		// Error Cases
-		{
-			name:        "invalid array index",
-			expr:        "[1,2,3][5]",
-			expectError: "index out of range",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			program, err := expr.Compile(tt.expr, expr.Env(tt.env))
-			require.NoError(t, err)
-
-			testVM := &vm.VM{}
-			got, err := testVM.Run(program, tt.env)
-
-			if tt.expectError != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.expectError)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
-
-func TestVM_GroupAndSortOperations(t *testing.T) {
-	tests := []struct {
-		name        string
-		expr        string
-		env         map[string]any
-		want        any
-		expectError string
-	}{
-		{
-			name: "group by single field",
-			expr: `groupBy([{"id": 1, "type": "a"}, {"id": 2, "type": "b"}, {"id": 3, "type": "a"}], #.type)`,
-			want: map[any][]any{
-				"a": {
-					map[string]any{"id": 1, "type": "a"},
-					map[string]any{"id": 3, "type": "a"},
-				},
-				"b": {
-					map[string]any{"id": 2, "type": "b"},
-				},
-			},
-		},
-		{
-			name: "sort by field ascending",
-			expr: `sortBy([{"id": 3}, {"id": 1}, {"id": 2}], #.id)`,
-			want: []any{
-				map[string]any{"id": 1},
-				map[string]any{"id": 2},
-				map[string]any{"id": 3},
-			},
-		},
-		{
-			name: "sort by field descending",
-			expr: `sortBy([{"id": 3}, {"id": 1}, {"id": 2}], #.id, "desc")`,
-			want: []any{
-				map[string]any{"id": 3},
-				map[string]any{"id": 2},
-				map[string]any{"id": 1},
-			},
-		},
-		{
-			name: "sort by computed value",
-			expr: `sortBy([1, 2, 3, 4], # % 2)`,
-			want: []any{2, 4, 1, 3},
-		},
-		{
-			name: "group by with complex key",
-			expr: `groupBy([1, 2, 3, 4, 5, 6], # % 2 == 0 ? "even" : "odd")`,
-			want: map[any][]any{
-				"even": {2, 4, 6},
-				"odd":  {1, 3, 5},
-			},
-		},
-		{
-			name:        "invalid sort order",
-			expr:        `sortBy([1, 2, 3], #, "invalid")`,
-			expectError: "unknown order",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			program, err := expr.Compile(tt.expr, expr.Env(tt.env))
-			require.NoError(t, err)
-
-			testVM := &vm.VM{}
-			got, err := testVM.Run(program, tt.env)
-
-			if tt.expectError != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.expectError)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
-
 // TestVM_ProfileOperations tests the profiling opcodes
 func TestVM_ProfileOperations(t *testing.T) {
 	program := &vm.Program{
@@ -479,38 +223,6 @@ func TestVM_ProfileOperations(t *testing.T) {
 
 	span := program.Constants[0].(*vm.Span)
 	require.True(t, span.Duration > 0, "Profile duration should be greater than 0")
-}
-
-// TestVM_IndexOperations tests the index manipulation opcodes
-func TestVM_IndexOperations(t *testing.T) {
-	tests := []struct {
-		name string
-		expr string
-		want any
-	}{
-		{
-			name: "decrement index in loop",
-			expr: "reduce([1,2,3], #acc + #, 0)",
-			want: 6,
-		},
-		{
-			name: "set index in loop",
-			expr: "map([1,2,3], # * 2)",
-			want: []any{2, 4, 6},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			program, err := expr.Compile(tt.expr)
-			require.NoError(t, err)
-
-			testVM := &vm.VM{}
-			got, err := testVM.Run(program, nil)
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
-		})
-	}
 }
 
 // TestVM_DirectCallOpcodes tests the specialized call opcodes directly

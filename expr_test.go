@@ -70,6 +70,7 @@ func TestExpr_roy(t *testing.T) {
 		{`or(false, false, false)`, false},
 		{"if(not(false()), false, 'byeeee')", false},
 		{"foo.bar[0]", "hello"},
+		{"1.5", 1.5},
 	}
 
 	for _, tt := range tests {
