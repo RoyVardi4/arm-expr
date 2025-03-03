@@ -108,8 +108,6 @@ func (v *checker) visit(node ast.Node) Nature {
 		nt = v.ChainNode(n)
 	case *ast.MemberNode:
 		nt = v.MemberNode(n)
-	case *ast.SliceNode:
-		nt = v.SliceNode(n)
 	case *ast.CallNode:
 		nt = v.CallNode(n)
 	case *ast.ArrayNode:
@@ -240,37 +238,6 @@ func (v *checker) MemberNode(node *ast.MemberNode) Nature {
 	}
 
 	return v.error(node, "type %v[%v] is undefined", base, prop)
-}
-
-func (v *checker) SliceNode(node *ast.SliceNode) Nature {
-	nt := v.visit(node.Node)
-
-	if isUnknown(nt) {
-		return unknown
-	}
-
-	switch nt.Kind() {
-	case reflect.String, reflect.Array, reflect.Slice:
-		// ok
-	default:
-		return v.error(node, "cannot slice %s", nt)
-	}
-
-	if node.From != nil {
-		from := v.visit(node.From)
-		if !isInteger(from) && !isUnknown(from) {
-			return v.error(node.From, "non-integer slice index %v", from)
-		}
-	}
-
-	if node.To != nil {
-		to := v.visit(node.To)
-		if !isInteger(to) && !isUnknown(to) {
-			return v.error(node.To, "non-integer slice index %v", to)
-		}
-	}
-
-	return nt
 }
 
 func (v *checker) CallNode(node *ast.CallNode) Nature {

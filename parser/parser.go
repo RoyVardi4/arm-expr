@@ -375,52 +375,17 @@ func (p *parser) parsePostfixExpression(node Node) Node {
 
 		} else if postfixToken.Value == "[" {
 			p.next()
-			var from, to Node
+			var property Node
 
-			if p.current.Is(Operator, ":") { // slice without from [:1]
-				p.next()
+			property = p.parseExpression()
 
-				if !p.current.Is(Bracket, "]") { // slice without from and to [:]
-					to = p.parseExpression()
-				}
-
-				node = &SliceNode{
-					Node: node,
-					To:   to,
-				}
-				node.SetLocation(postfixToken.Location)
-				p.expect(Bracket, "]")
-
-			} else {
-
-				from = p.parseExpression()
-
-				if p.current.Is(Operator, ":") {
-					p.next()
-
-					if !p.current.Is(Bracket, "]") { // slice without to [1:]
-						to = p.parseExpression()
-					}
-
-					node = &SliceNode{
-						Node: node,
-						From: from,
-						To:   to,
-					}
-					node.SetLocation(postfixToken.Location)
-					p.expect(Bracket, "]")
-
-				} else {
-					// Slice operator [:] was not found,
-					// it should be just an index node.
-					node = &MemberNode{
-						Node:     node,
-						Property: from,
-					}
-					node.SetLocation(postfixToken.Location)
-					p.expect(Bracket, "]")
-				}
+			node = &MemberNode{
+				Node:     node,
+				Property: property,
 			}
+			node.SetLocation(postfixToken.Location)
+			p.expect(Bracket, "]")
+
 		} else {
 			break
 		}

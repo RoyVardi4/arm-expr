@@ -206,8 +206,6 @@ func (c *compiler) compile(node ast.Node) {
 		c.ChainNode(n)
 	case *ast.MemberNode:
 		c.MemberNode(n)
-	case *ast.SliceNode:
-		c.SliceNode(n)
 	case *ast.CallNode:
 		c.CallNode(n)
 	case *ast.ArrayNode:
@@ -424,21 +422,6 @@ func (c *compiler) MemberNode(node *ast.MemberNode) {
 			&runtime.Field{Index: index, Path: path},
 		))
 	}
-}
-
-func (c *compiler) SliceNode(node *ast.SliceNode) {
-	c.compile(node.Node)
-	if node.To != nil {
-		c.compile(node.To)
-	} else {
-		c.emit(OpLen)
-	}
-	if node.From != nil {
-		c.compile(node.From)
-	} else {
-		c.emitPush(0)
-	}
-	c.emit(OpSlice)
 }
 
 func (c *compiler) CallNode(node *ast.CallNode) {

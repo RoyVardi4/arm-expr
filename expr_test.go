@@ -25,9 +25,7 @@ func toBool(value interface{}) (bool, error) {
 func TestExpr_roy(t *testing.T) {
 	env := map[string]any{
 		"foo": map[string]any{
-			"bar": map[string]any{
-				"yes": true,
-			},
+			"bar": []string{"hello", "world"},
 		},
 		"and": func(args ...bool) bool {
 			for _, arg := range args {
@@ -68,7 +66,7 @@ func TestExpr_roy(t *testing.T) {
 	tests := []struct{ code string }{
 		{`or(false, false, false)`},
 		{"if(not(false()), false, 'byeeee')"},
-		{"if(foo.bar['yes'], false, true)"},
+		{"[1, 2, 3][1]"},
 	}
 
 	for _, tt := range tests {

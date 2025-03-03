@@ -126,7 +126,6 @@ func node(depth int) ast.Node {
 		{identifierNode, 1000},
 		{memberNode, 1500},
 		{callNode, 2000},
-		{sliceNode, 100},
 	})(depth - 1)
 }
 
@@ -243,13 +242,5 @@ func mapNode(depth int) ast.Node {
 	}
 	return &ast.MapNode{
 		Pairs: items,
-	}
-}
-
-func sliceNode(depth int) ast.Node {
-	return &ast.SliceNode{
-		Node: node(depth - 1),
-		From: node(depth - 1),
-		To:   node(depth - 1),
 	}
 }

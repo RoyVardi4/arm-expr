@@ -140,17 +140,6 @@ type MemberNode struct {
 	Method   bool
 }
 
-// SliceNode represents access to a slice of an array.
-// Example:
-//
-//	array[1:4]
-type SliceNode struct {
-	base
-	Node Node // Node of the slice. Like "array" in "array[1:4]".
-	From Node // From an index of the array. Like "1" in "array[1:4]".
-	To   Node // To an index of the array. Like "4" in "array[1:4]".
-}
-
 // CallNode represents a function or a method call.
 type CallNode struct {
 	base
