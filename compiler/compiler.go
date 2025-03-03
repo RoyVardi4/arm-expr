@@ -450,19 +450,6 @@ func (c *compiler) lookupVariable(name string) (int, bool) {
 	return 0, false
 }
 
-func (c *compiler) optimize() {
-	for i, op := range c.bytecode {
-		switch op {
-		case OpJumpIfTrue, OpJumpIfFalse, OpJumpIfNil, OpJumpIfNotNil:
-			target := i + c.arguments[i] + 1
-			for target < len(c.bytecode) && c.bytecode[target] == op {
-				target += c.arguments[target] + 1
-			}
-			c.arguments[i] = target - i - 1
-		}
-	}
-}
-
 func kind(t reflect.Type) reflect.Kind {
 	if t == nil {
 		return reflect.Invalid

@@ -6,8 +6,6 @@ const (
 	OpInvalid Opcode = iota
 	OpPush
 	OpInt
-	OpPop
-	OpStore
 	OpLoadVar
 	OpLoadConst
 	OpLoadField
@@ -21,36 +19,6 @@ const (
 	OpTrue
 	OpFalse
 	OpNil
-	OpNegate
-	OpNot
-	OpEqual
-	OpEqualInt
-	OpEqualString
-	OpJump
-	OpJumpIfTrue
-	OpJumpIfFalse
-	OpJumpIfNil
-	OpJumpIfNotNil
-	OpJumpIfEnd
-	OpJumpBackward
-	OpIn
-	OpLess
-	OpMore
-	OpLessOrEqual
-	OpMoreOrEqual
-	OpAdd
-	OpSubtract
-	OpMultiply
-	OpDivide
-	OpModulo
-	OpExponent
-	OpRange
-	OpMatches
-	OpMatchesConst
-	OpContains
-	OpStartsWith
-	OpEndsWith
-	OpSlice
 	OpCall
 	OpCall0
 	OpCall1
@@ -58,28 +26,9 @@ const (
 	OpCall3
 	OpCallN
 	OpCallFast
-	OpCallSafe
 	OpCallTyped
-	OpArray
-	OpMap
-	OpLen
 	OpCast
 	OpDeref
-	OpIncrementIndex
-	OpDecrementIndex
-	OpIncrementCount
-	OpGetIndex
-	OpGetCount
-	OpGetLen
-	OpGetAcc
-	OpSetAcc
-	OpSetIndex
-	OpPointer
-	OpThrow
-	OpCreate
-	OpGroupBy
-	OpSortBy
-	OpSort
 	OpProfileStart
 	OpProfileEnd
 	OpBegin

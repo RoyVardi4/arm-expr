@@ -26,6 +26,7 @@ func TestExpr_roy(t *testing.T) {
 	env := map[string]any{
 		"foo": map[string]any{
 			"bar": []string{"hello", "world"},
+			"baz": "hi",
 		},
 		"and": func(args ...bool) bool {
 			for _, arg := range args {
@@ -70,6 +71,7 @@ func TestExpr_roy(t *testing.T) {
 		{`or(false, false, false)`, false},
 		{"if(not(false()), false, 'byeeee')", false},
 		{"foo.bar[0]", "hello"},
+		{"foo['baz']", "hi"},
 		{"1.5", 1.5},
 	}
 

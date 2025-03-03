@@ -92,12 +92,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 		code := func(label string) {
 			_, _ = fmt.Fprintf(w, "%v\t%v\n", pp, label)
 		}
-		jump := func(label string) {
-			_, _ = fmt.Fprintf(w, "%v\t%v\t<%v>\t(%v)\n", pp, label, arg, ip+arg)
-		}
-		jumpBack := func(label string) {
-			_, _ = fmt.Fprintf(w, "%v\t%v\t<%v>\t(%v)\n", pp, label, arg, ip-arg)
-		}
 		argument := func(label string) {
 			_, _ = fmt.Fprintf(w, "%v\t%v\t<%v>\n", pp, label, arg)
 		}
@@ -132,12 +126,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 
 		case OpInt:
 			argument("OpInt")
-
-		case OpPop:
-			code("OpPop")
-
-		case OpStore:
-			argumentWithInfo("OpStore", "var")
 
 		case OpLoadVar:
 			argumentWithInfo("OpLoadVar", "var")
@@ -178,96 +166,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 		case OpNil:
 			code("OpNil")
 
-		case OpNegate:
-			code("OpNegate")
-
-		case OpNot:
-			code("OpNot")
-
-		case OpEqual:
-			code("OpEqual")
-
-		case OpEqualInt:
-			code("OpEqualInt")
-
-		case OpEqualString:
-			code("OpEqualString")
-
-		case OpJump:
-			jump("OpJump")
-
-		case OpJumpIfTrue:
-			jump("OpJumpIfTrue")
-
-		case OpJumpIfFalse:
-			jump("OpJumpIfFalse")
-
-		case OpJumpIfNil:
-			jump("OpJumpIfNil")
-
-		case OpJumpIfNotNil:
-			jump("OpJumpIfNotNil")
-
-		case OpJumpIfEnd:
-			jump("OpJumpIfEnd")
-
-		case OpJumpBackward:
-			jumpBack("OpJumpBackward")
-
-		case OpIn:
-			code("OpIn")
-
-		case OpLess:
-			code("OpLess")
-
-		case OpMore:
-			code("OpMore")
-
-		case OpLessOrEqual:
-			code("OpLessOrEqual")
-
-		case OpMoreOrEqual:
-			code("OpMoreOrEqual")
-
-		case OpAdd:
-			code("OpAdd")
-
-		case OpSubtract:
-			code("OpSubtract")
-
-		case OpMultiply:
-			code("OpMultiply")
-
-		case OpDivide:
-			code("OpDivide")
-
-		case OpModulo:
-			code("OpModulo")
-
-		case OpExponent:
-			code("OpExponent")
-
-		case OpRange:
-			code("OpRange")
-
-		case OpMatches:
-			code("OpMatches")
-
-		case OpMatchesConst:
-			constant("OpMatchesConst")
-
-		case OpContains:
-			code("OpContains")
-
-		case OpStartsWith:
-			code("OpStartsWith")
-
-		case OpEndsWith:
-			code("OpEndsWith")
-
-		case OpSlice:
-			code("OpSlice")
-
 		case OpCall:
 			argument("OpCall")
 
@@ -289,72 +187,15 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 		case OpCallFast:
 			argument("OpCallFast")
 
-		case OpCallSafe:
-			argument("OpCallSafe")
-
 		case OpCallTyped:
 			signature := reflect.TypeOf(FuncTypes[arg]).Elem().String()
 			_, _ = fmt.Fprintf(w, "%v\t%v\t<%v>\t%v\n", pp, "OpCallTyped", arg, signature)
-
-		case OpArray:
-			code("OpArray")
-
-		case OpMap:
-			code("OpMap")
-
-		case OpLen:
-			code("OpLen")
 
 		case OpCast:
 			argument("OpCast")
 
 		case OpDeref:
 			code("OpDeref")
-
-		case OpIncrementIndex:
-			code("OpIncrementIndex")
-
-		case OpDecrementIndex:
-			code("OpDecrementIndex")
-
-		case OpIncrementCount:
-			code("OpIncrementCount")
-
-		case OpGetIndex:
-			code("OpGetIndex")
-
-		case OpGetCount:
-			code("OpGetCount")
-
-		case OpGetLen:
-			code("OpGetLen")
-
-		case OpGetAcc:
-			code("OpGetAcc")
-
-		case OpSetAcc:
-			code("OpSetAcc")
-
-		case OpSetIndex:
-			code("OpSetIndex")
-
-		case OpPointer:
-			code("OpPointer")
-
-		case OpThrow:
-			code("OpThrow")
-
-		case OpCreate:
-			argument("OpCreate")
-
-		case OpGroupBy:
-			code("OpGroupBy")
-
-		case OpSortBy:
-			code("OpSortBy")
-
-		case OpSort:
-			code("OpSort")
 
 		case OpProfileStart:
 			code("OpProfileStart")
