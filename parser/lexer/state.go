@@ -30,9 +30,9 @@ func root(l *lexer) stateFn {
 		return number
 	case r == '/':
 		return slash
-	case strings.ContainsRune("([{", r):
+	case strings.ContainsRune("([", r):
 		l.emit(Bracket)
-	case strings.ContainsRune(")]}", r):
+	case strings.ContainsRune(")]", r):
 		l.emit(Bracket)
 	case strings.ContainsRune(",", r): // single rune operator
 		l.emit(Operator)

@@ -106,10 +106,6 @@ func (v *checker) visit(node ast.Node) Nature {
 		nt = v.MemberNode(n)
 	case *ast.CallNode:
 		nt = v.CallNode(n)
-	case *ast.MapNode:
-		nt = v.MapNode(n)
-	case *ast.PairNode:
-		nt = v.PairNode(n)
 	default:
 		panic(fmt.Sprintf("undefined node type (%T)", node))
 	}
@@ -441,17 +437,4 @@ func (v *checker) lookupVariable(name string) (varScope, bool) {
 		}
 	}
 	return varScope{}, false
-}
-
-func (v *checker) MapNode(node *ast.MapNode) Nature {
-	for _, pair := range node.Pairs {
-		v.visit(pair)
-	}
-	return mapNature
-}
-
-func (v *checker) PairNode(node *ast.PairNode) Nature {
-	v.visit(node.Key)
-	v.visit(node.Value)
-	return nilNature
 }

@@ -204,10 +204,6 @@ func (c *compiler) compile(node ast.Node) {
 		c.MemberNode(n)
 	case *ast.CallNode:
 		c.CallNode(n)
-	case *ast.MapNode:
-		c.MapNode(n)
-	case *ast.PairNode:
-		c.PairNode(n)
 	default:
 		panic(fmt.Sprintf("undefined node type (%T)", node))
 	}
@@ -452,20 +448,6 @@ func (c *compiler) lookupVariable(name string) (int, bool) {
 		}
 	}
 	return 0, false
-}
-
-func (c *compiler) MapNode(node *ast.MapNode) {
-	for _, pair := range node.Pairs {
-		c.compile(pair)
-	}
-
-	c.emitPush(len(node.Pairs))
-	c.emit(OpMap)
-}
-
-func (c *compiler) PairNode(node *ast.PairNode) {
-	c.compile(node.Key)
-	c.compile(node.Value)
 }
 
 func (c *compiler) optimize() {

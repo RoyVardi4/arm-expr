@@ -47,21 +47,3 @@ func (n *CallNode) String() string {
 	}
 	return fmt.Sprintf("%s(%s)", n.Callee.String(), strings.Join(arguments, ", "))
 }
-
-func (n *MapNode) String() string {
-	pairs := make([]string, len(n.Pairs))
-	for i, pair := range n.Pairs {
-		pairs[i] = pair.String()
-	}
-	return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
-}
-
-func (n *PairNode) String() string {
-	if str, ok := n.Key.(*StringNode); ok {
-		if utils.IsValidIdentifier(str.Value) {
-			return fmt.Sprintf("%s: %s", str.Value, n.Value.String())
-		}
-		return fmt.Sprintf("%s: %s", str.String(), n.Value.String())
-	}
-	return fmt.Sprintf("(%s): %s", n.Key.String(), n.Value.String())
-}

@@ -125,16 +125,3 @@ type CallNode struct {
 	Callee    Node   // Node of the call. Like "foo" in "foo()".
 	Arguments []Node // Arguments of the call.
 }
-
-// MapNode represents a map.
-type MapNode struct {
-	base
-	Pairs []Node // PairNode nodes.
-}
-
-// PairNode represents a key-value pair of a map.
-type PairNode struct {
-	base
-	Key   Node // Key of the pair.
-	Value Node // Value of the pair.
-}

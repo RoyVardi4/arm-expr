@@ -121,7 +121,6 @@ func node(depth int) ast.Node {
 		})(depth - 1)
 	}
 	return weightedRandom([]fnWeight{
-		{mapNode, 1},
 		{identifierNode, 1000},
 		{memberNode, 1500},
 		{callNode, 2000},
@@ -208,23 +207,5 @@ func callNode(depth int) ast.Node {
 			{funcNode, 2},
 		})(depth - 1),
 		Arguments: args,
-	}
-}
-
-func mapNode(depth int) ast.Node {
-	var items []ast.Node
-	max := weightedRandomInt([]intWeight{
-		{1, 100},
-		{2, 50},
-		{3, 25},
-	})
-	for i := 0; i < max; i++ {
-		items = append(items, &ast.PairNode{
-			Key:   stringNode(depth - 1),
-			Value: node(depth - 1),
-		})
-	}
-	return &ast.MapNode{
-		Pairs: items,
 	}
 }

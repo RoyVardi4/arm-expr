@@ -198,11 +198,7 @@ func (p *parser) parseSecondary() Node {
 		node.SetLocation(token.Location)
 
 	default:
-		if token.Is(Bracket, "{") {
-			node = p.parseMapExpression(token)
-		} else {
-			p.error("unexpected token %v", token)
-		}
+		p.error("unexpected token %v", token)
 	}
 
 	return p.parsePostfixExpression(node)
@@ -254,53 +250,6 @@ func (p *parser) parseArguments(arguments []Node) []Node {
 	p.expect(Bracket, ")")
 
 	return arguments
-}
-
-func (p *parser) parseMapExpression(token Token) Node {
-	p.expect(Bracket, "{")
-
-	nodes := make([]Node, 0)
-	for !p.current.Is(Bracket, "}") && p.err == nil {
-		if len(nodes) > 0 {
-			p.expect(Operator, ",")
-			if p.current.Is(Bracket, "}") {
-				goto end
-			}
-			if p.current.Is(Operator, ",") {
-				p.error("unexpected token %v", p.current)
-			}
-		}
-
-		var key Node
-		// Map key can be one of:
-		//  * number
-		//  * string
-		//  * identifier, which is equivalent to a string
-		//  * expression, which must be enclosed in parentheses -- (1 + 2)
-		if p.current.Is(Number) || p.current.Is(String) || p.current.Is(Identifier) {
-			key = &StringNode{Value: p.current.Value}
-			key.SetLocation(token.Location)
-			p.next()
-		} else if p.current.Is(Bracket, "(") {
-			key = p.parseExpression()
-		} else {
-			p.error("a map key must be a quoted string, a number, a identifier, or an expression enclosed in parentheses (unexpected token %v)", p.current)
-		}
-
-		p.expect(Operator, ":")
-
-		node := p.parseExpression()
-		pair := &PairNode{Key: key, Value: node}
-		pair.SetLocation(token.Location)
-		nodes = append(nodes, pair)
-	}
-
-end:
-	p.expect(Bracket, "}")
-
-	node := &MapNode{Pairs: nodes}
-	node.SetLocation(token.Location)
-	return node
 }
 
 func (p *parser) parsePostfixExpression(node Node) Node {
