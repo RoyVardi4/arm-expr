@@ -218,10 +218,6 @@ func (c *compiler) IdentifierNode(node *ast.IdentifierNode) {
 		c.emit(OpLoadVar, index)
 		return
 	}
-	if node.Value == "$env" {
-		c.emit(OpLoadEnv)
-		return
-	}
 
 	var env Nature
 	if c.config != nil {

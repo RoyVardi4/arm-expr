@@ -1,7 +1,6 @@
 package checker_test
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -136,34 +135,6 @@ func TestCheck_dont_panic_on_nil_arguments_for_builtins(t *testing.T) {
 
 			_, err = checker.Check(tree, conf.New(nil))
 			require.Error(t, err)
-		})
-	}
-}
-
-func TestCheck_env_keyword(t *testing.T) {
-	env := map[string]any{
-		"num":  42,
-		"str":  "foo",
-		"name": "str",
-	}
-
-	tests := []struct {
-		input string
-		want  reflect.Kind
-	}{
-		{`$env['str']`, reflect.String},
-		{`$env['num']`, reflect.Int},
-		{`$env[name]`, reflect.Interface},
-	}
-
-	for _, test := range tests {
-		t.Run(test.input, func(t *testing.T) {
-			tree, err := parser.Parse(test.input)
-			require.NoError(t, err)
-
-			rtype, err := checker.Check(tree, conf.New(env))
-			require.NoError(t, err)
-			require.True(t, rtype.Kind() == test.want, fmt.Sprintf("expected %s, got %s", test.want, rtype.Kind()))
 		})
 	}
 }

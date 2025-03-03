@@ -374,15 +374,6 @@ func TestVM_DirectBasicOpcodes(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "OpLoadEnv",
-			bytecode: []vm.Opcode{
-				vm.OpLoadEnv, // Load entire environment
-			},
-			args: []int{0},
-			env:  map[string]any{"key": "value"},
-			want: map[string]any{"key": "value"},
-		},
-		{
 			name: "OpTrue",
 			bytecode: []vm.Opcode{
 				vm.OpTrue,

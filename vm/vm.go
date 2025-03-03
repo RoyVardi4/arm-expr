@@ -123,9 +123,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 			a := vm.pop()
 			vm.push(runtime.FetchField(a, program.Constants[arg].(*runtime.Field)))
 
-		case OpLoadEnv:
-			vm.push(env)
-
 		case OpMethod:
 			a := vm.pop()
 			vm.push(runtime.FetchMethod(a, program.Constants[arg].(*runtime.Method)))

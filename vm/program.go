@@ -145,9 +145,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 		case OpLoadFunc:
 			argumentWithInfo("OpLoadFunc", "func")
 
-		case OpLoadEnv:
-			code("OpLoadEnv")
-
 		case OpFetch:
 			code("OpFetch")
 
