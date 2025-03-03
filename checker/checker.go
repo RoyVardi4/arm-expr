@@ -102,8 +102,6 @@ func (v *checker) visit(node ast.Node) Nature {
 		nt = v.BoolNode(n)
 	case *ast.StringNode:
 		nt = v.StringNode(n)
-	case *ast.ConstantNode:
-		nt = v.ConstantNode(n)
 	case *ast.ChainNode:
 		nt = v.ChainNode(n)
 	case *ast.MemberNode:
@@ -172,10 +170,6 @@ func (v *checker) BoolNode(*ast.BoolNode) Nature {
 
 func (v *checker) StringNode(*ast.StringNode) Nature {
 	return stringNature
-}
-
-func (v *checker) ConstantNode(node *ast.ConstantNode) Nature {
-	return Nature{Type: reflect.TypeOf(node.Value)}
 }
 
 func (v *checker) ChainNode(node *ast.ChainNode) Nature {

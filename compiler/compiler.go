@@ -200,8 +200,6 @@ func (c *compiler) compile(node ast.Node) {
 		c.BoolNode(n)
 	case *ast.StringNode:
 		c.StringNode(n)
-	case *ast.ConstantNode:
-		c.ConstantNode(n)
 	case *ast.ChainNode:
 		c.ChainNode(n)
 	case *ast.MemberNode:
@@ -335,14 +333,6 @@ func (c *compiler) BoolNode(node *ast.BoolNode) {
 }
 
 func (c *compiler) StringNode(node *ast.StringNode) {
-	c.emitPush(node.Value)
-}
-
-func (c *compiler) ConstantNode(node *ast.ConstantNode) {
-	if node.Value == nil {
-		c.emit(OpNil)
-		return
-	}
 	c.emitPush(node.Value)
 }
 

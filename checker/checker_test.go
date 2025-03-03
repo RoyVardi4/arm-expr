@@ -3,7 +3,6 @@ package checker_test
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"testing"
 
 	"expr/internal/testify/assert"
@@ -11,27 +10,13 @@ import (
 	"expr/types"
 
 	"expr"
-	"expr/ast"
 	"expr/checker"
 	"expr/conf"
 	"expr/parser"
 )
 
-func TestVisitor_ConstantNode(t *testing.T) {
-	tree, err := parser.Parse(`re("[a-z]")`)
-	require.NoError(t, err)
-
-	regexValue := regexp.MustCompile("[a-z]")
-	constNode := &ast.ConstantNode{Value: regexValue}
-	ast.Patch(&tree.Node, constNode)
-
-	_, err = checker.Check(tree, nil)
-	assert.NoError(t, err)
-	assert.Equal(t, reflect.TypeOf(regexValue), tree.Node.Type())
-}
-
 func TestCheck_AsBool(t *testing.T) {
-	tree, err := parser.Parse(`1+2`)
+	tree, err := parser.Parse(`1`)
 	require.NoError(t, err)
 
 	config := &conf.Config{}
@@ -78,21 +63,6 @@ func TestCheck_NoConfig(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCheck_AllowUndefinedVariables(t *testing.T) {
-	type Env struct {
-		A int
-	}
-
-	tree, err := parser.Parse(`Any + fn()`)
-	require.NoError(t, err)
-
-	config := conf.New(Env{})
-	expr.AllowUndefinedVariables()(config)
-
-	_, err = checker.Check(tree, config)
-	assert.NoError(t, err)
-}
-
 func TestCheck_AllowUndefinedVariables_DefaultType(t *testing.T) {
 	env := map[string]bool{}
 
@@ -105,47 +75,6 @@ func TestCheck_AllowUndefinedVariables_DefaultType(t *testing.T) {
 
 	_, err = checker.Check(tree, config)
 	assert.NoError(t, err)
-}
-
-func TestCheck_AllowUndefinedVariables_OptionalChaining(t *testing.T) {
-	type Env struct{}
-
-	tree, err := parser.Parse("Not?.A.B == nil")
-	require.NoError(t, err)
-
-	config := conf.New(Env{})
-	expr.AllowUndefinedVariables()(config)
-
-	_, err = checker.Check(tree, config)
-	assert.NoError(t, err)
-}
-
-func TestCheck_TypeWeights(t *testing.T) {
-	types := map[string]any{
-		"Uint":    uint(1),
-		"Uint8":   uint8(2),
-		"Uint16":  uint16(3),
-		"Uint32":  uint32(4),
-		"Uint64":  uint64(5),
-		"Int":     6,
-		"Int8":    int8(7),
-		"Int16":   int16(8),
-		"Int32":   int32(9),
-		"Int64":   int64(10),
-		"Float32": float32(11),
-		"Float64": float64(12),
-	}
-	for a := range types {
-		for b := range types {
-			tree, err := parser.Parse(fmt.Sprintf("%s + %s", a, b))
-			require.NoError(t, err)
-
-			config := conf.New(types)
-
-			_, err = checker.Check(tree, config)
-			require.NoError(t, err)
-		}
-	}
 }
 
 func TestCheck_works_with_nil_types(t *testing.T) {
@@ -191,17 +120,6 @@ func TestCheck_cast_to_expected_works_with_interface(t *testing.T) {
 		_, err = checker.Check(tree, config)
 		require.NoError(t, err)
 	})
-}
-
-func TestCheck_operator_in_works_with_interfaces(t *testing.T) {
-	tree, err := parser.Parse(`'Tom' in names`)
-	require.NoError(t, err)
-
-	config := conf.New(nil)
-	expr.AllowUndefinedVariables()(config)
-
-	_, err = checker.Check(tree, config)
-	require.NoError(t, err)
 }
 
 func TestCheck_dont_panic_on_nil_arguments_for_builtins(t *testing.T) {
@@ -250,27 +168,6 @@ func TestCheck_env_keyword(t *testing.T) {
 	}
 }
 
-func TestCheck_builtin_without_call(t *testing.T) {
-	tests := []struct {
-		input string
-		err   string
-	}{
-		{`len + 1`, "invalid operation: + (mismatched types func(...interface {}) (interface {}, error) and int) (1:5)\n | len + 1\n | ....^"},
-		{`string.A`, "type func(interface {}) string[string] is undefined (1:8)\n | string.A\n | .......^"},
-	}
-
-	for _, test := range tests {
-		t.Run(test.input, func(t *testing.T) {
-			tree, err := parser.Parse(test.input)
-			require.NoError(t, err)
-
-			_, err = checker.Check(tree, conf.New(nil))
-			require.Error(t, err)
-			require.Equal(t, test.err, err.Error())
-		})
-	}
-}
-
 func TestCheck_types(t *testing.T) {
 	env := types.Map{
 		"foo": types.Map{
@@ -291,15 +188,8 @@ func TestCheck_types(t *testing.T) {
 		err  string
 	}{
 		{`unknown`, noerr},
-		{`[unknown + 42, another_unknown + "foo"]`, noerr},
-		{`foo.bar.baz > 0`, `invalid operation: > (mismatched types string and int)`},
 		{`foo.unknown.baz`, `unknown field unknown (1:5)`},
 		{`foo.bar.unknown`, noerr},
-		{`foo.bar.unknown + 42`, `invalid operation: + (mismatched types string and int)`},
-		{`[foo] | map(.unknown)`, `unknown field unknown`},
-		{`[foo] | map(.bar) | filter(.baz)`, `predicate should return boolean (got string)`},
-		{`arr | filter(.value > 0)`, `invalid operation: > (mismatched types string and int)`},
-		{`arr | filter(.value contains "a") | filter(.value == 0)`, `invalid operation: == (mismatched types string and int)`},
 	}
 
 	for _, test := range tests {

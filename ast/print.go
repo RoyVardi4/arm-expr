@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -30,17 +29,6 @@ func (n *BoolNode) String() string {
 
 func (n *StringNode) String() string {
 	return fmt.Sprintf("%q", n.Value)
-}
-
-func (n *ConstantNode) String() string {
-	if n.Value == nil {
-		return "nil"
-	}
-	b, err := json.Marshal(n.Value)
-	if err != nil {
-		panic(err)
-	}
-	return string(b)
 }
 
 func (n *ChainNode) String() string {

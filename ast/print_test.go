@@ -98,28 +98,3 @@ func TestPrint_MemberNode(t *testing.T) {
 	}
 	require.Equal(t, `a?.["b c"]`, node.String())
 }
-
-func TestPrint_ConstantNode(t *testing.T) {
-	tests := []struct {
-		input any
-		want  string
-	}{
-		{nil, `nil`},
-		{true, `true`},
-		{false, `false`},
-		{1, `1`},
-		{1.1, `1.1`},
-		{"a", `"a"`},
-		{[]int{1, 2, 3}, `[1,2,3]`},
-		{map[string]int{"a": 1}, `{"a":1}`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.want, func(t *testing.T) {
-			node := &ast.ConstantNode{
-				Value: tt.input,
-			}
-			require.Equal(t, tt.want, node.String())
-		})
-	}
-}

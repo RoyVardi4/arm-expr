@@ -104,15 +104,6 @@ type StringNode struct {
 	Value string // Value of the string.
 }
 
-// ConstantNode represents a constant.
-// Constants are predefined values like nil, true, false, array, map, etc.
-// The parser.Parse will never generate ConstantNode, it is only generated
-// by the optimizer.
-type ConstantNode struct {
-	base
-	Value any // Value of the constant.
-}
-
 // ChainNode represents an optional chaining group.
 // A few MemberNode nodes can be chained together,
 // and will be wrapped in a ChainNode. Example:
