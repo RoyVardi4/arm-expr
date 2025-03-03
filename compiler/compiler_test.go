@@ -379,7 +379,7 @@ func TestCompile(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.code, func(t *testing.T) {
-			program, err := expr.Compile(test.code, expr.Env(Env{}), expr.Optimize(false))
+			program, err := expr.Compile(test.code, expr.Env(Env{}))
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want.Disassemble(), program.Disassemble())

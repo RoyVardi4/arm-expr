@@ -1,12 +1,9 @@
 package expr
 
 import (
-	"errors"
 	"expr/checker"
 	"expr/compiler"
 	"expr/conf"
-	"expr/file"
-	"expr/optimizer"
 	"expr/vm"
 	"fmt"
 	"reflect"
@@ -91,35 +88,16 @@ func WarnOnAny() Option {
 	}
 }
 
-// Optimize turns optimizations on or off.
-func Optimize(b bool) Option {
-	return func(c *conf.Config) {
-		c.Optimize = b
-	}
-}
-
 // Compile parses and compiles given input expression to bytecode program.
 func Compile(input string, ops ...Option) (*vm.Program, error) {
 	config := conf.CreateNew()
 	for _, op := range ops {
 		op(config)
 	}
-	config.Check()
 
 	tree, err := checker.ParseCheck(input, config)
 	if err != nil {
 		return nil, err
-	}
-
-	if config.Optimize {
-		err = optimizer.Optimize(&tree.Node, config)
-		if err != nil {
-			var fileError *file.Error
-			if errors.As(err, &fileError) {
-				return nil, fileError.Bind(tree.Source)
-			}
-			return nil, err
-		}
 	}
 
 	program, err := compiler.Compile(tree, config)

@@ -44,9 +44,6 @@ func Compile(tree *parser.Tree, config *conf.Config) (program *Program, err erro
 		case reflect.Float64:
 			c.emit(OpCast, 2)
 		}
-		if c.config.Optimize {
-			c.optimize()
-		}
 	}
 
 	var span *Span
@@ -349,17 +346,6 @@ func (c *compiler) ConstantNode(node *ast.ConstantNode) {
 		return
 	}
 	c.emitPush(node.Value)
-}
-
-func isSimpleType(node ast.Node) bool {
-	if node == nil {
-		return false
-	}
-	t := node.Type()
-	if t == nil {
-		return false
-	}
-	return t.PkgPath() == ""
 }
 
 func (c *compiler) ChainNode(node *ast.ChainNode) {

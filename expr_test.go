@@ -2,14 +2,12 @@ package expr_test
 
 import (
 	"expr"
-	"expr/ast"
 	"expr/file"
 	"expr/internal/testify/assert"
 	"expr/internal/testify/require"
 	"expr/types"
 	"fmt"
 	"os"
-	"reflect"
 	"strconv"
 	"testing"
 )
@@ -184,18 +182,6 @@ func fib(n int) int {
 	return fib(n-1) + fib(n-2)
 }
 
-type patcher struct{}
-
-func (p *patcher) Visit(node *ast.Node) {
-	switch n := (*node).(type) {
-	case *ast.MemberNode:
-		ast.Patch(node, &ast.CallNode{
-			Callee:    &ast.IdentifierNode{Value: "get"},
-			Arguments: []ast.Node{n.Node, n.Property},
-		})
-	}
-}
-
 func TestExpr_readme_example(t *testing.T) {
 	env := map[string]any{
 		"greet":   "Hello, %v!",
@@ -266,25 +252,6 @@ type divideError struct{ Message string }
 
 func (e divideError) Error() string {
 	return e.Message
-}
-
-var stringer = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
-
-type stringerPatcher struct{}
-
-func (p *stringerPatcher) Visit(node *ast.Node) {
-	t := (*node).Type()
-	if t == nil {
-		return
-	}
-	if t.Implements(stringer) {
-		ast.Patch(node, &ast.CallNode{
-			Callee: &ast.MemberNode{
-				Node:     *node,
-				Property: &ast.StringNode{Value: "String"},
-			},
-		})
-	}
 }
 
 func TestAsBool_exposed_error(t *testing.T) {
