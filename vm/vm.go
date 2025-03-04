@@ -101,9 +101,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 		case OpLoadMethod:
 			vm.push(runtime.FetchMethod(env, program.Constants[arg].(*runtime.Method)))
 
-		case OpLoadFunc:
-			vm.push(program.functions[arg])
-
 		case OpFetch:
 			b := vm.pop()
 			a := vm.pop()
@@ -145,53 +142,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 				panic(out[1].Interface().(error))
 			}
 			vm.push(out[0].Interface())
-
-		case OpCall0:
-			out, err := program.functions[arg]()
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCall1:
-			a := vm.pop()
-			out, err := program.functions[arg](a)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCall2:
-			b := vm.pop()
-			a := vm.pop()
-			out, err := program.functions[arg](a, b)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCall3:
-			c := vm.pop()
-			b := vm.pop()
-			a := vm.pop()
-			out, err := program.functions[arg](a, b, c)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCallN:
-			fn := vm.pop().(Function)
-			size := arg
-			in := make([]any, size)
-			for i := int(size) - 1; i >= 0; i-- {
-				in[i] = vm.pop()
-			}
-			out, err := fn(in...)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
 
 		case OpCallFast:
 			fn := vm.pop().(func(...any) any)

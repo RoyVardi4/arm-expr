@@ -92,9 +92,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 		argument := func(label string) {
 			_, _ = fmt.Fprintf(w, "%v\t%v\t<%v>\n", pp, label, arg)
 		}
-		argumentWithInfo := func(label string, prefix string) {
-			_, _ = fmt.Fprintf(w, "%v\t%v\t<%v>\t%v\n", pp, label, arg, program.debugInfo[fmt.Sprintf("%s_%d", prefix, arg)])
-		}
 		constant := func(label string) {
 			var c any
 			if arg < len(program.Constants) {
@@ -133,9 +130,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 		case OpLoadMethod:
 			constant("OpLoadMethod")
 
-		case OpLoadFunc:
-			argumentWithInfo("OpLoadFunc", "func")
-
 		case OpFetch:
 			code("OpFetch")
 
@@ -156,21 +150,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 
 		case OpCall:
 			argument("OpCall")
-
-		case OpCall0:
-			argumentWithInfo("OpCall0", "func")
-
-		case OpCall1:
-			argumentWithInfo("OpCall1", "func")
-
-		case OpCall2:
-			argumentWithInfo("OpCall2", "func")
-
-		case OpCall3:
-			argumentWithInfo("OpCall3", "func")
-
-		case OpCallN:
-			argument("OpCallN")
 
 		case OpCallFast:
 			argument("OpCallFast")

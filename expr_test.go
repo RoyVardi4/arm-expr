@@ -24,6 +24,9 @@ func toBool(value interface{}) (bool, error) {
 
 func TestExpr_roy(t *testing.T) {
 	env := map[string]any{
+		"roy": map[string]any{
+			"fun": func() bool { return true },
+		},
 		"foo": map[string]any{
 			"bar": []string{"hello", "world"},
 			"baz": "hi",
@@ -74,6 +77,7 @@ func TestExpr_roy(t *testing.T) {
 		{"foo['baz']", "hi"},
 		{"1.5", 1.5},
 		{"1", 1},
+		{"roy.fun()", true},
 	}
 
 	for _, tt := range tests {
