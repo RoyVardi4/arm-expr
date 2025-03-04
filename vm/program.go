@@ -23,7 +23,6 @@ type Program struct {
 	source    file.Source
 	node      ast.Node
 	locations []file.Location
-	functions []Function
 	debugInfo map[string]string
 	span      *Span
 }
@@ -36,7 +35,6 @@ func NewProgram(
 	constants []any,
 	bytecode []Opcode,
 	arguments []int,
-	functions []Function,
 	debugInfo map[string]string,
 	span *Span,
 ) *Program {
@@ -47,7 +45,6 @@ func NewProgram(
 		Constants: constants,
 		Bytecode:  bytecode,
 		Arguments: arguments,
-		functions: functions,
 		debugInfo: debugInfo,
 		span:      span,
 	}

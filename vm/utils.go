@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type (
-	Function     = func(params ...any) (any, error)
-	SafeFunction = func(params ...any) (any, uint, error)
-)
-
 var (
 	// MemoryBudget represents an upper limit of memory usage.
 	MemoryBudget uint = 1e6

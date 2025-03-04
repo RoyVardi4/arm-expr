@@ -335,7 +335,6 @@ func TestVM_DirectBasicOpcodes(t *testing.T) {
 				tt.consts,
 				tt.bytecode,
 				tt.args,
-				nil, // functions
 				nil, // debugInfo
 				nil, // span
 			)

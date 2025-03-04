@@ -26,6 +26,12 @@ func TestExpr_roy(t *testing.T) {
 	env := map[string]any{
 		"roy": map[string]any{
 			"fun": func() bool { return true },
+			"fun2": func() any {
+				return map[string]any{
+					"bar": []string{"hello", "world"},
+					"baz": "hi",
+				}
+			},
 		},
 		"foo": map[string]any{
 			"bar": []string{"hello", "world"},
@@ -78,6 +84,7 @@ func TestExpr_roy(t *testing.T) {
 		{"1.5", 1.5},
 		{"1", 1},
 		{"roy.fun()", true},
+		{"roy.fun2().baz", "hi"},
 	}
 
 	for _, tt := range tests {

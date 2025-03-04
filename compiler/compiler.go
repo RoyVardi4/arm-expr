@@ -58,7 +58,6 @@ func Compile(tree *parser.Tree, config *conf.Config) (program *Program, err erro
 		c.constants,
 		c.bytecode,
 		c.arguments,
-		c.functions,
 		c.debugInfo,
 		span,
 	)
@@ -71,7 +70,6 @@ type compiler struct {
 	bytecode       []Opcode
 	constants      []any
 	constantsIndex map[any]int
-	functions      []Function
 	functionsIndex map[string]int
 	debugInfo      map[string]string
 	nodes          []ast.Node
