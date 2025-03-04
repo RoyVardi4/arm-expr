@@ -5,7 +5,6 @@ type Opcode byte
 const (
 	OpInvalid Opcode = iota
 	OpPush
-	OpInt
 	OpLoadConst
 	OpLoadField
 	OpLoadFast

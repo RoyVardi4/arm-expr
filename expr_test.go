@@ -73,6 +73,7 @@ func TestExpr_roy(t *testing.T) {
 		{"foo.bar[0]", "hello"},
 		{"foo['baz']", "hi"},
 		{"1.5", 1.5},
+		{"1", 1},
 	}
 
 	for _, tt := range tests {

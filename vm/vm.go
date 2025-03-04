@@ -89,9 +89,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 		case OpPush:
 			vm.push(program.Constants[arg])
 
-		case OpInt:
-			vm.push(arg)
-
 		case OpLoadConst:
 			vm.push(runtime.Fetch(env, program.Constants[arg]))
 

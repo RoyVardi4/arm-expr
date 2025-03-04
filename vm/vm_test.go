@@ -397,33 +397,6 @@ func TestVM_DirectBasicOpcodes(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "OpInt",
-			bytecode: []vm.Opcode{
-				vm.OpInt, // Push int directly from args
-			},
-			args:   []int{42}, // The value 42 is passed directly in args
-			consts: []any{},   // No constants needed
-			want:   42,
-		},
-		{
-			name: "OpInt negative",
-			bytecode: []vm.Opcode{
-				vm.OpInt, // Push negative int directly from args
-			},
-			args:   []int{-42}, // The value -42 is passed directly in args
-			consts: []any{},    // No constants needed
-			want:   -42,
-		},
-		{
-			name: "OpInt zero",
-			bytecode: []vm.Opcode{
-				vm.OpInt, // Push zero directly from args
-			},
-			args:   []int{0}, // The value 0 is passed directly in args
-			consts: []any{},  // No constants needed
-			want:   0,
-		},
-		{
 			name: "OpCast int to float64",
 			bytecode: []vm.Opcode{
 				vm.OpPush, // Push int
