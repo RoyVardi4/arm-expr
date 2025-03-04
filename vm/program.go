@@ -23,7 +23,6 @@ type Program struct {
 	source    file.Source
 	node      ast.Node
 	locations []file.Location
-	variables int
 	functions []Function
 	debugInfo map[string]string
 	span      *Span
@@ -34,7 +33,6 @@ func NewProgram(
 	source file.Source,
 	node ast.Node,
 	locations []file.Location,
-	variables int,
 	constants []any,
 	bytecode []Opcode,
 	arguments []int,
@@ -46,7 +44,6 @@ func NewProgram(
 		source:    source,
 		node:      node,
 		locations: locations,
-		variables: variables,
 		Constants: constants,
 		Bytecode:  bytecode,
 		Arguments: arguments,
@@ -126,9 +123,6 @@ func (program *Program) DisassembleWriter(w io.Writer) {
 
 		case OpInt:
 			argument("OpInt")
-
-		case OpLoadVar:
-			argumentWithInfo("OpLoadVar", "var")
 
 		case OpLoadConst:
 			constant("OpLoadConst")

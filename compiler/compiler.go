@@ -55,7 +55,6 @@ func Compile(tree *parser.Tree, config *conf.Config) (program *Program, err erro
 		tree.Source,
 		tree.Node,
 		c.locations,
-		c.variables,
 		c.constants,
 		c.bytecode,
 		c.arguments,
@@ -70,8 +69,6 @@ type compiler struct {
 	config         *conf.Config
 	locations      []file.Location
 	bytecode       []Opcode
-	variables      int
-	scopes         []scope
 	constants      []any
 	constantsIndex map[any]int
 	functions      []Function
@@ -81,11 +78,6 @@ type compiler struct {
 	spans          []*Span
 	chains         [][]int
 	arguments      []int
-}
-
-type scope struct {
-	variableName string
-	index        int
 }
 
 func (c *compiler) nodeParent() ast.Node {
@@ -214,11 +206,6 @@ func (c *compiler) NilNode(_ *ast.NilNode) {
 }
 
 func (c *compiler) IdentifierNode(node *ast.IdentifierNode) {
-	if index, ok := c.lookupVariable(node.Value); ok {
-		c.emit(OpLoadVar, index)
-		return
-	}
-
 	var env Nature
 	if c.config != nil {
 		env = c.config.Env
@@ -435,15 +422,6 @@ func (c *compiler) CallNode(node *ast.CallNode) {
 	} else {
 		c.emit(OpCall, len(node.Arguments))
 	}
-}
-
-func (c *compiler) lookupVariable(name string) (int, bool) {
-	for i := len(c.scopes) - 1; i >= 0; i-- {
-		if c.scopes[i].variableName == name {
-			return c.scopes[i].index, true
-		}
-	}
-	return 0, false
 }
 
 func kind(t reflect.Type) reflect.Kind {

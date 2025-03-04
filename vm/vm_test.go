@@ -317,7 +317,6 @@ func TestVM_DirectCallOpcodes(t *testing.T) {
 				nil, // source
 				nil, // node
 				nil, // locations
-				0,   // variables
 				tt.consts,
 				tt.bytecode,
 				tt.args,
@@ -471,7 +470,6 @@ func TestVM_DirectBasicOpcodes(t *testing.T) {
 				nil, // source
 				nil, // node
 				nil, // locations
-				0,   // variables
 				tt.consts,
 				tt.bytecode,
 				tt.args,

@@ -6,7 +6,6 @@ const (
 	OpInvalid Opcode = iota
 	OpPush
 	OpInt
-	OpLoadVar
 	OpLoadConst
 	OpLoadField
 	OpLoadFast

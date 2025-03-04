@@ -33,7 +33,6 @@ func Debug() *VM {
 type VM struct {
 	Stack        []any
 	Scopes       []*Scope
-	Variables    []any
 	ip           int
 	memory       uint
 	memoryBudget uint
@@ -68,9 +67,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 	if vm.Scopes != nil {
 		vm.Scopes = vm.Scopes[0:0]
 	}
-	if len(vm.Variables) < program.variables {
-		vm.Variables = make([]any, program.variables)
-	}
 
 	vm.memoryBudget = MemoryBudget
 	vm.memory = 0
@@ -95,9 +91,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 
 		case OpInt:
 			vm.push(arg)
-
-		case OpLoadVar:
-			vm.push(vm.Variables[arg])
 
 		case OpLoadConst:
 			vm.push(runtime.Fetch(env, program.Constants[arg]))
