@@ -2,11 +2,8 @@ package mock
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
-
-	"github.com/expr-lang/expr/ast"
 )
 
 type Env struct {
@@ -195,25 +192,6 @@ type Abstract interface {
 }
 
 type MyFunc func(string) int
-
-var stringer = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
-
-type StringerPatcher struct{}
-
-func (*StringerPatcher) Visit(node *ast.Node) {
-	t := (*node).Type()
-	if t == nil {
-		return
-	}
-	if t.Implements(stringer) {
-		ast.Patch(node, &ast.CallNode{
-			Callee: &ast.MemberNode{
-				Node:     *node,
-				Property: &ast.StringNode{Value: "String"},
-			},
-		})
-	}
-}
 
 type MapStringStringEnv map[string]string
 

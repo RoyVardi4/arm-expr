@@ -3,14 +3,12 @@ package checker
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 
-	"github.com/expr-lang/expr/ast"
-	"github.com/expr-lang/expr/builtin"
-	. "github.com/expr-lang/expr/checker/nature"
-	"github.com/expr-lang/expr/conf"
-	"github.com/expr-lang/expr/file"
-	"github.com/expr-lang/expr/parser"
+	"expr/ast"
+	. "expr/checker/nature"
+	"expr/conf"
+	"expr/file"
+	"expr/parser"
 )
 
 // ParseCheck parses input expression and checks its types. Also, it applies
@@ -21,27 +19,6 @@ func ParseCheck(input string, config *conf.Config) (*parser.Tree, error) {
 		return tree, err
 	}
 
-	if len(config.Visitors) > 0 {
-		for i := 0; i < 1000; i++ {
-			more := false
-			for _, v := range config.Visitors {
-				// We need to perform types check, because some visitors may rely on
-				// types information available in the tree.
-				_, _ = Check(tree, config)
-
-				ast.Walk(&tree.Node, v)
-
-				if v, ok := v.(interface {
-					ShouldRepeat() bool
-				}); ok {
-					more = more || v.ShouldRepeat()
-				}
-			}
-			if !more {
-				break
-			}
-		}
-	}
 	_, err = Check(tree, config)
 	if err != nil {
 		return tree, err
@@ -110,17 +87,6 @@ type varScope struct {
 	nature Nature
 }
 
-type info struct {
-	method bool
-	fn     *builtin.Function
-
-	// elem is element type of array or map.
-	// Arrays created with type []any, but
-	// we would like to detect expressions
-	// like `42 in ["a"]` as invalid.
-	elem reflect.Type
-}
-
 func (v *checker) visit(node ast.Node) Nature {
 	var nt Nature
 	switch n := node.(type) {
@@ -136,36 +102,10 @@ func (v *checker) visit(node ast.Node) Nature {
 		nt = v.BoolNode(n)
 	case *ast.StringNode:
 		nt = v.StringNode(n)
-	case *ast.ConstantNode:
-		nt = v.ConstantNode(n)
-	case *ast.UnaryNode:
-		nt = v.UnaryNode(n)
-	case *ast.BinaryNode:
-		nt = v.BinaryNode(n)
-	case *ast.ChainNode:
-		nt = v.ChainNode(n)
 	case *ast.MemberNode:
 		nt = v.MemberNode(n)
-	case *ast.SliceNode:
-		nt = v.SliceNode(n)
 	case *ast.CallNode:
 		nt = v.CallNode(n)
-	case *ast.BuiltinNode:
-		nt = v.BuiltinNode(n)
-	case *ast.PredicateNode:
-		nt = v.PredicateNode(n)
-	case *ast.PointerNode:
-		nt = v.PointerNode(n)
-	case *ast.VariableDeclaratorNode:
-		nt = v.VariableDeclaratorNode(n)
-	case *ast.ConditionalNode:
-		nt = v.ConditionalNode(n)
-	case *ast.ArrayNode:
-		nt = v.ArrayNode(n)
-	case *ast.MapNode:
-		nt = v.MapNode(n)
-	case *ast.PairNode:
-		nt = v.PairNode(n)
 	default:
 		panic(fmt.Sprintf("undefined node type (%T)", node))
 	}
@@ -195,21 +135,12 @@ func (v *checker) IdentifierNode(node *ast.IdentifierNode) Nature {
 		return unknown
 	}
 
-	return v.ident(node, node.Value, v.config.Env.Strict, true)
+	return v.ident(node, node.Value, v.config.Env.Strict)
 }
 
-// ident method returns type of environment variable, builtin or function.
-func (v *checker) ident(node ast.Node, name string, strict, builtins bool) Nature {
+func (v *checker) ident(node ast.Node, name string, strict bool) Nature {
 	if nt, ok := v.config.Env.Get(name); ok {
 		return nt
-	}
-	if builtins {
-		if fn, ok := v.config.Functions[name]; ok {
-			return Nature{Type: fn.Type(), Func: fn}
-		}
-		if fn, ok := v.config.Builtins[name]; ok {
-			return Nature{Type: fn.Type(), Func: fn}
-		}
 	}
 	if v.config.Strict && strict {
 		return v.error(node, "unknown name %v", name)
@@ -233,234 +164,7 @@ func (v *checker) StringNode(*ast.StringNode) Nature {
 	return stringNature
 }
 
-func (v *checker) ConstantNode(node *ast.ConstantNode) Nature {
-	return Nature{Type: reflect.TypeOf(node.Value)}
-}
-
-func (v *checker) UnaryNode(node *ast.UnaryNode) Nature {
-	nt := v.visit(node.Node)
-	nt = nt.Deref()
-
-	switch node.Operator {
-
-	case "!", "not":
-		if isBool(nt) {
-			return boolNature
-		}
-		if isUnknown(nt) {
-			return boolNature
-		}
-
-	case "+", "-":
-		if isNumber(nt) {
-			return nt
-		}
-		if isUnknown(nt) {
-			return unknown
-		}
-
-	default:
-		return v.error(node, "unknown operator (%v)", node.Operator)
-	}
-
-	return v.error(node, `invalid operation: %v (mismatched type %s)`, node.Operator, nt)
-}
-
-func (v *checker) BinaryNode(node *ast.BinaryNode) Nature {
-	l := v.visit(node.Left)
-	r := v.visit(node.Right)
-
-	l = l.Deref()
-	r = r.Deref()
-
-	switch node.Operator {
-	case "==", "!=":
-		if isComparable(l, r) {
-			return boolNature
-		}
-
-	case "or", "||", "and", "&&":
-		if isBool(l) && isBool(r) {
-			return boolNature
-		}
-		if or(l, r, isBool) {
-			return boolNature
-		}
-
-	case "<", ">", ">=", "<=":
-		if isNumber(l) && isNumber(r) {
-			return boolNature
-		}
-		if isString(l) && isString(r) {
-			return boolNature
-		}
-		if isTime(l) && isTime(r) {
-			return boolNature
-		}
-		if or(l, r, isNumber, isString, isTime) {
-			return boolNature
-		}
-
-	case "-":
-		if isNumber(l) && isNumber(r) {
-			return combined(l, r)
-		}
-		if isTime(l) && isTime(r) {
-			return durationNature
-		}
-		if isTime(l) && isDuration(r) {
-			return timeNature
-		}
-		if or(l, r, isNumber, isTime, isDuration) {
-			return unknown
-		}
-
-	case "*":
-		if isNumber(l) && isNumber(r) {
-			return combined(l, r)
-		}
-		if or(l, r, isNumber) {
-			return unknown
-		}
-
-	case "/":
-		if isNumber(l) && isNumber(r) {
-			return floatNature
-		}
-		if or(l, r, isNumber) {
-			return floatNature
-		}
-
-	case "**", "^":
-		if isNumber(l) && isNumber(r) {
-			return floatNature
-		}
-		if or(l, r, isNumber) {
-			return floatNature
-		}
-
-	case "%":
-		if isInteger(l) && isInteger(r) {
-			return integerNature
-		}
-		if or(l, r, isInteger) {
-			return integerNature
-		}
-
-	case "+":
-		if isNumber(l) && isNumber(r) {
-			return combined(l, r)
-		}
-		if isString(l) && isString(r) {
-			return stringNature
-		}
-		if isTime(l) && isDuration(r) {
-			return timeNature
-		}
-		if isDuration(l) && isTime(r) {
-			return timeNature
-		}
-		if or(l, r, isNumber, isString, isTime, isDuration) {
-			return unknown
-		}
-
-	case "in":
-		if (isString(l) || isUnknown(l)) && isStruct(r) {
-			return boolNature
-		}
-		if isMap(r) {
-			if !isUnknown(l) && !l.AssignableTo(r.Key()) {
-				return v.error(node, "cannot use %v as type %v in map key", l, r.Key())
-			}
-			return boolNature
-		}
-		if isArray(r) {
-			if !isComparable(l, r.Elem()) {
-				return v.error(node, "cannot use %v as type %v in array", l, r.Elem())
-			}
-			return boolNature
-		}
-		if isUnknown(l) && anyOf(r, isString, isArray, isMap) {
-			return boolNature
-		}
-		if isUnknown(r) {
-			return boolNature
-		}
-
-	case "matches":
-		if s, ok := node.Right.(*ast.StringNode); ok {
-			_, err := regexp.Compile(s.Value)
-			if err != nil {
-				return v.error(node, err.Error())
-			}
-		}
-		if isString(l) && isString(r) {
-			return boolNature
-		}
-		if or(l, r, isString) {
-			return boolNature
-		}
-
-	case "contains", "startsWith", "endsWith":
-		if isString(l) && isString(r) {
-			return boolNature
-		}
-		if or(l, r, isString) {
-			return boolNature
-		}
-
-	case "..":
-		if isInteger(l) && isInteger(r) {
-			return arrayOf(integerNature)
-		}
-		if or(l, r, isInteger) {
-			return arrayOf(integerNature)
-		}
-
-	case "??":
-		if isNil(l) && !isNil(r) {
-			return r
-		}
-		if !isNil(l) && isNil(r) {
-			return l
-		}
-		if isNil(l) && isNil(r) {
-			return nilNature
-		}
-		if r.AssignableTo(l) {
-			return l
-		}
-		return unknown
-
-	default:
-		return v.error(node, "unknown operator (%v)", node.Operator)
-
-	}
-
-	return v.error(node, `invalid operation: %v (mismatched types %v and %v)`, node.Operator, l, r)
-}
-
-func (v *checker) ChainNode(node *ast.ChainNode) Nature {
-	return v.visit(node.Node)
-}
-
 func (v *checker) MemberNode(node *ast.MemberNode) Nature {
-	// $env variable
-	if an, ok := node.Node.(*ast.IdentifierNode); ok && an.Value == "$env" {
-		if name, ok := node.Property.(*ast.StringNode); ok {
-			strict := v.config.Strict
-			if node.Optional {
-				// If user explicitly set optional flag, then we should not
-				// throw error if field is not found (as user trying to handle
-				// this case). But if user did not set optional flag, then we
-				// should throw error if field is not found & v.config.Strict.
-				strict = false
-			}
-			return v.ident(node, name.Value, strict, false /* no builtins and no functions */)
-		}
-		return unknown
-	}
-
 	base := v.visit(node.Node)
 	prop := v.visit(node.Property)
 
@@ -518,37 +222,6 @@ func (v *checker) MemberNode(node *ast.MemberNode) Nature {
 	return v.error(node, "type %v[%v] is undefined", base, prop)
 }
 
-func (v *checker) SliceNode(node *ast.SliceNode) Nature {
-	nt := v.visit(node.Node)
-
-	if isUnknown(nt) {
-		return unknown
-	}
-
-	switch nt.Kind() {
-	case reflect.String, reflect.Array, reflect.Slice:
-		// ok
-	default:
-		return v.error(node, "cannot slice %s", nt)
-	}
-
-	if node.From != nil {
-		from := v.visit(node.From)
-		if !isInteger(from) && !isUnknown(from) {
-			return v.error(node.From, "non-integer slice index %v", from)
-		}
-	}
-
-	if node.To != nil {
-		to := v.visit(node.To)
-		if !isInteger(to) && !isUnknown(to) {
-			return v.error(node.To, "non-integer slice index %v", to)
-		}
-	}
-
-	return nt
-}
-
 func (v *checker) CallNode(node *ast.CallNode) Nature {
 	nt := v.functionReturnType(node)
 
@@ -572,10 +245,6 @@ func (v *checker) CallNode(node *ast.CallNode) Nature {
 
 func (v *checker) functionReturnType(node *ast.CallNode) Nature {
 	nt := v.visit(node.Callee)
-
-	if nt.Func != nil {
-		return v.checkFunction(nt.Func, node, node.Arguments)
-	}
 
 	fnName := "function"
 	if identifier, ok := node.Callee.(*ast.IdentifierNode); ok {
@@ -609,237 +278,6 @@ func (v *checker) functionReturnType(node *ast.CallNode) Nature {
 	return v.error(node, "%s is not callable", nt)
 }
 
-func (v *checker) BuiltinNode(node *ast.BuiltinNode) Nature {
-	switch node.Name {
-	case "all", "none", "any", "one":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection)
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-
-			if !isBool(predicate.Out(0)) && !isUnknown(predicate.Out(0)) {
-				return v.error(node.Arguments[1], "predicate should return boolean (got %v)", predicate.Out(0).String())
-			}
-			return boolNature
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "filter":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection)
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-
-			if !isBool(predicate.Out(0)) && !isUnknown(predicate.Out(0)) {
-				return v.error(node.Arguments[1], "predicate should return boolean (got %v)", predicate.Out(0).String())
-			}
-			if isUnknown(collection) {
-				return arrayNature
-			}
-			return arrayOf(collection.Elem())
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "map":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection, scopeVar{"index", integerNature})
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-
-			return arrayOf(*predicate.PredicateOut)
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "count":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		if len(node.Arguments) == 1 {
-			return integerNature
-		}
-
-		v.begin(collection)
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-			if !isBool(predicate.Out(0)) && !isUnknown(predicate.Out(0)) {
-				return v.error(node.Arguments[1], "predicate should return boolean (got %v)", predicate.Out(0).String())
-			}
-
-			return integerNature
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "sum":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		if len(node.Arguments) == 2 {
-			v.begin(collection)
-			predicate := v.visit(node.Arguments[1])
-			v.end()
-
-			if isFunc(predicate) &&
-				predicate.NumOut() == 1 &&
-				predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-				return predicate.Out(0)
-			}
-		} else {
-			if isUnknown(collection) {
-				return unknown
-			}
-			return collection.Elem()
-		}
-
-	case "find", "findLast":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection)
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-
-			if !isBool(predicate.Out(0)) && !isUnknown(predicate.Out(0)) {
-				return v.error(node.Arguments[1], "predicate should return boolean (got %v)", predicate.Out(0).String())
-			}
-			if isUnknown(collection) {
-				return unknown
-			}
-			return collection.Elem()
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "findIndex", "findLastIndex":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection)
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-
-			if !isBool(predicate.Out(0)) && !isUnknown(predicate.Out(0)) {
-				return v.error(node.Arguments[1], "predicate should return boolean (got %v)", predicate.Out(0).String())
-			}
-			return integerNature
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "groupBy":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection)
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-
-			groups := arrayOf(collection.Elem())
-			return Nature{Type: reflect.TypeOf(map[any][]any{}), ArrayOf: &groups}
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "sortBy":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection)
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if len(node.Arguments) == 3 {
-			_ = v.visit(node.Arguments[2])
-		}
-
-		if isFunc(predicate) &&
-			predicate.NumOut() == 1 &&
-			predicate.NumIn() == 1 && isUnknown(predicate.In(0)) {
-
-			return collection
-		}
-		return v.error(node.Arguments[1], "predicate should has one input and one output param")
-
-	case "reduce":
-		collection := v.visit(node.Arguments[0])
-		if !isArray(collection) && !isUnknown(collection) {
-			return v.error(node.Arguments[0], "builtin %v takes only array (got %v)", node.Name, collection)
-		}
-
-		v.begin(collection, scopeVar{"index", integerNature}, scopeVar{"acc", unknown})
-		predicate := v.visit(node.Arguments[1])
-		v.end()
-
-		if len(node.Arguments) == 3 {
-			_ = v.visit(node.Arguments[2])
-		}
-
-		if isFunc(predicate) && predicate.NumOut() == 1 {
-			return *predicate.PredicateOut
-		}
-		return v.error(node.Arguments[1], "predicate should has two input and one output param")
-
-	}
-
-	if id, ok := builtin.Index[node.Name]; ok {
-		switch node.Name {
-		case "get":
-			return v.checkBuiltinGet(node)
-		}
-		return v.checkFunction(builtin.Builtins[id], node, node.Arguments)
-	}
-
-	return v.error(node, "unknown builtin %v", node.Name)
-}
-
 type scopeVar struct {
 	varName   string
 	varNature Nature
@@ -855,88 +293,6 @@ func (v *checker) begin(collectionNature Nature, vars ...scopeVar) {
 
 func (v *checker) end() {
 	v.predicateScopes = v.predicateScopes[:len(v.predicateScopes)-1]
-}
-
-func (v *checker) checkBuiltinGet(node *ast.BuiltinNode) Nature {
-	if len(node.Arguments) != 2 {
-		return v.error(node, "invalid number of arguments (expected 2, got %d)", len(node.Arguments))
-	}
-
-	base := v.visit(node.Arguments[0])
-	prop := v.visit(node.Arguments[1])
-
-	if id, ok := node.Arguments[0].(*ast.IdentifierNode); ok && id.Value == "$env" {
-		if s, ok := node.Arguments[1].(*ast.StringNode); ok {
-			if nt, ok := v.config.Env.Get(s.Value); ok {
-				return nt
-			}
-		}
-		return unknown
-	}
-
-	if isUnknown(base) {
-		return unknown
-	}
-
-	switch base.Kind() {
-	case reflect.Slice, reflect.Array:
-		if !isInteger(prop) && !isUnknown(prop) {
-			return v.error(node.Arguments[1], "non-integer slice index %s", prop)
-		}
-		return base.Elem()
-	case reflect.Map:
-		if !prop.AssignableTo(base.Key()) && !isUnknown(prop) {
-			return v.error(node.Arguments[1], "cannot use %s to get an element from %s", prop, base)
-		}
-		return base.Elem()
-	}
-	return v.error(node.Arguments[0], "type %v does not support indexing", base)
-}
-
-func (v *checker) checkFunction(f *builtin.Function, node ast.Node, arguments []ast.Node) Nature {
-	if f.Validate != nil {
-		args := make([]reflect.Type, len(arguments))
-		for i, arg := range arguments {
-			argNature := v.visit(arg)
-			if isUnknown(argNature) {
-				args[i] = anyType
-			} else {
-				args[i] = argNature.Type
-			}
-		}
-		t, err := f.Validate(args)
-		if err != nil {
-			return v.error(node, "%v", err)
-		}
-		return Nature{Type: t}
-	} else if len(f.Types) == 0 {
-		nt, err := v.checkArguments(f.Name, Nature{Type: f.Type()}, arguments, node)
-		if err != nil {
-			if v.err == nil {
-				v.err = err
-			}
-			return unknown
-		}
-		// No type was specified, so we assume the function returns any.
-		return nt
-	}
-	var lastErr *file.Error
-	for _, t := range f.Types {
-		outNature, err := v.checkArguments(f.Name, Nature{Type: t}, arguments, node)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		return outNature
-	}
-	if lastErr != nil {
-		if v.err == nil {
-			v.err = lastErr
-		}
-		return unknown
-	}
-
-	return v.error(node, "no matching overload for %v", f.Name)
 }
 
 func (v *checker) checkArguments(
@@ -1064,16 +420,6 @@ func traverseAndReplaceIntegerNodesWithFloatNodes(node *ast.Node, newNature Natu
 	case *ast.IntegerNode:
 		*node = &ast.FloatNode{Value: float64((*node).(*ast.IntegerNode).Value)}
 		(*node).SetType(newNature.Type)
-	case *ast.UnaryNode:
-		unaryNode := (*node).(*ast.UnaryNode)
-		traverseAndReplaceIntegerNodesWithFloatNodes(&unaryNode.Node, newNature)
-	case *ast.BinaryNode:
-		binaryNode := (*node).(*ast.BinaryNode)
-		switch binaryNode.Operator {
-		case "+", "-", "*":
-			traverseAndReplaceIntegerNodesWithFloatNodes(&binaryNode.Left, newNature)
-			traverseAndReplaceIntegerNodesWithFloatNodes(&binaryNode.Right, newNature)
-		}
 	}
 }
 
@@ -1081,76 +427,7 @@ func traverseAndReplaceIntegerNodesWithIntegerNodes(node *ast.Node, newNature Na
 	switch (*node).(type) {
 	case *ast.IntegerNode:
 		(*node).SetType(newNature.Type)
-	case *ast.UnaryNode:
-		(*node).SetType(newNature.Type)
-		unaryNode := (*node).(*ast.UnaryNode)
-		traverseAndReplaceIntegerNodesWithIntegerNodes(&unaryNode.Node, newNature)
-	case *ast.BinaryNode:
-		// TODO: Binary node return type is dependent on the type of the operands. We can't just change the type of the node.
-		binaryNode := (*node).(*ast.BinaryNode)
-		switch binaryNode.Operator {
-		case "+", "-", "*":
-			traverseAndReplaceIntegerNodesWithIntegerNodes(&binaryNode.Left, newNature)
-			traverseAndReplaceIntegerNodesWithIntegerNodes(&binaryNode.Right, newNature)
-		}
 	}
-}
-
-func (v *checker) PredicateNode(node *ast.PredicateNode) Nature {
-	nt := v.visit(node.Node)
-	var out []reflect.Type
-	if isUnknown(nt) {
-		out = append(out, anyType)
-	} else if !isNil(nt) {
-		out = append(out, nt.Type)
-	}
-	return Nature{
-		Type:         reflect.FuncOf([]reflect.Type{anyType}, out, false),
-		PredicateOut: &nt,
-	}
-}
-
-func (v *checker) PointerNode(node *ast.PointerNode) Nature {
-	if len(v.predicateScopes) == 0 {
-		return v.error(node, "cannot use pointer accessor outside predicate")
-	}
-	scope := v.predicateScopes[len(v.predicateScopes)-1]
-	if node.Name == "" {
-		if isUnknown(scope.collection) {
-			return unknown
-		}
-		switch scope.collection.Kind() {
-		case reflect.Array, reflect.Slice:
-			return scope.collection.Elem()
-		}
-		return v.error(node, "cannot use %v as array", scope)
-	}
-	if scope.vars != nil {
-		if t, ok := scope.vars[node.Name]; ok {
-			return t
-		}
-	}
-	return v.error(node, "unknown pointer #%v", node.Name)
-}
-
-func (v *checker) VariableDeclaratorNode(node *ast.VariableDeclaratorNode) Nature {
-	if _, ok := v.config.Env.Get(node.Name); ok {
-		return v.error(node, "cannot redeclare %v", node.Name)
-	}
-	if _, ok := v.config.Functions[node.Name]; ok {
-		return v.error(node, "cannot redeclare function %v", node.Name)
-	}
-	if _, ok := v.config.Builtins[node.Name]; ok {
-		return v.error(node, "cannot redeclare builtin %v", node.Name)
-	}
-	if _, ok := v.lookupVariable(node.Name); ok {
-		return v.error(node, "cannot redeclare variable %v", node.Name)
-	}
-	varNature := v.visit(node.Value)
-	v.varScopes = append(v.varScopes, varScope{node.Name, varNature})
-	exprNature := v.visit(node.Expr)
-	v.varScopes = v.varScopes[:len(v.varScopes)-1]
-	return exprNature
 }
 
 func (v *checker) lookupVariable(name string) (varScope, bool) {
@@ -1160,59 +437,4 @@ func (v *checker) lookupVariable(name string) (varScope, bool) {
 		}
 	}
 	return varScope{}, false
-}
-
-func (v *checker) ConditionalNode(node *ast.ConditionalNode) Nature {
-	c := v.visit(node.Cond)
-	if !isBool(c) && !isUnknown(c) {
-		return v.error(node.Cond, "non-bool expression (type %v) used as condition", c)
-	}
-
-	t1 := v.visit(node.Exp1)
-	t2 := v.visit(node.Exp2)
-
-	if isNil(t1) && !isNil(t2) {
-		return t2
-	}
-	if !isNil(t1) && isNil(t2) {
-		return t1
-	}
-	if isNil(t1) && isNil(t2) {
-		return nilNature
-	}
-	if t1.AssignableTo(t2) {
-		return t1
-	}
-	return unknown
-}
-
-func (v *checker) ArrayNode(node *ast.ArrayNode) Nature {
-	var prev Nature
-	allElementsAreSameType := true
-	for i, node := range node.Nodes {
-		curr := v.visit(node)
-		if i > 0 {
-			if curr.Kind() != prev.Kind() {
-				allElementsAreSameType = false
-			}
-		}
-		prev = curr
-	}
-	if allElementsAreSameType {
-		return arrayOf(prev)
-	}
-	return arrayNature
-}
-
-func (v *checker) MapNode(node *ast.MapNode) Nature {
-	for _, pair := range node.Pairs {
-		v.visit(pair)
-	}
-	return mapNature
-}
-
-func (v *checker) PairNode(node *ast.PairNode) Nature {
-	v.visit(node.Key)
-	v.visit(node.Value)
-	return nilNature
 }

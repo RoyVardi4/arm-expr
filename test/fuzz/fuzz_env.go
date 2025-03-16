@@ -1,11 +1,5 @@
 package fuzz
 
-import (
-	"fmt"
-
-	"github.com/expr-lang/expr"
-)
-
 func NewEnv() map[string]any {
 	return map[string]any{
 		"ok":    true,
@@ -29,12 +23,6 @@ func NewEnv() map[string]any {
 		},
 		"greet": func(name string) string { return "Hello, " + name },
 	}
-}
-
-func Func() expr.Option {
-	return expr.Function("fn", func(params ...any) (any, error) {
-		return fmt.Sprintf("fn(%v)", params), nil
-	})
 }
 
 type Foo struct {

@@ -5,15 +5,11 @@ package vm
 import (
 	"fmt"
 	"reflect"
-	"regexp"
-	"sort"
-	"strings"
 	"time"
 
-	"github.com/expr-lang/expr/builtin"
-	"github.com/expr-lang/expr/file"
-	"github.com/expr-lang/expr/internal/deref"
-	"github.com/expr-lang/expr/vm/runtime"
+	"expr/file"
+	"expr/internal/deref"
+	"expr/vm/runtime"
 )
 
 func Run(program *Program, env any) (any, error) {
@@ -28,8 +24,8 @@ func Run(program *Program, env any) (any, error) {
 func Debug() *VM {
 	vm := &VM{
 		debug: true,
-		step:  make(chan struct{}, 0),
-		curr:  make(chan int, 0),
+		step:  make(chan struct{}),
+		curr:  make(chan int),
 	}
 	return vm
 }
@@ -37,7 +33,6 @@ func Debug() *VM {
 type VM struct {
 	Stack        []any
 	Scopes       []*Scope
-	Variables    []any
 	ip           int
 	memory       uint
 	memoryBudget uint
@@ -72,9 +67,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 	if vm.Scopes != nil {
 		vm.Scopes = vm.Scopes[0:0]
 	}
-	if len(vm.Variables) < program.variables {
-		vm.Variables = make([]any, program.variables)
-	}
 
 	vm.memoryBudget = MemoryBudget
 	vm.memory = 0
@@ -97,18 +89,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 		case OpPush:
 			vm.push(program.Constants[arg])
 
-		case OpInt:
-			vm.push(arg)
-
-		case OpPop:
-			vm.pop()
-
-		case OpStore:
-			vm.Variables[arg] = vm.pop()
-
-		case OpLoadVar:
-			vm.push(vm.Variables[arg])
-
 		case OpLoadConst:
 			vm.push(runtime.Fetch(env, program.Constants[arg]))
 
@@ -121,9 +101,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 		case OpLoadMethod:
 			vm.push(runtime.FetchMethod(env, program.Constants[arg].(*runtime.Method)))
 
-		case OpLoadFunc:
-			vm.push(program.functions[arg])
-
 		case OpFetch:
 			b := vm.pop()
 			a := vm.pop()
@@ -132,9 +109,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 		case OpFetchField:
 			a := vm.pop()
 			vm.push(runtime.FetchField(a, program.Constants[arg].(*runtime.Field)))
-
-		case OpLoadEnv:
-			vm.push(env)
 
 		case OpMethod:
 			a := vm.pop()
@@ -148,183 +122,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 
 		case OpNil:
 			vm.push(nil)
-
-		case OpNegate:
-			v := runtime.Negate(vm.pop())
-			vm.push(v)
-
-		case OpNot:
-			v := vm.pop().(bool)
-			vm.push(!v)
-
-		case OpEqual:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Equal(a, b))
-
-		case OpEqualInt:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(a.(int) == b.(int))
-
-		case OpEqualString:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(a.(string) == b.(string))
-
-		case OpJump:
-			vm.ip += arg
-
-		case OpJumpIfTrue:
-			if vm.current().(bool) {
-				vm.ip += arg
-			}
-
-		case OpJumpIfFalse:
-			if !vm.current().(bool) {
-				vm.ip += arg
-			}
-
-		case OpJumpIfNil:
-			if runtime.IsNil(vm.current()) {
-				vm.ip += arg
-			}
-
-		case OpJumpIfNotNil:
-			if !runtime.IsNil(vm.current()) {
-				vm.ip += arg
-			}
-
-		case OpJumpIfEnd:
-			scope := vm.scope()
-			if scope.Index >= scope.Len {
-				vm.ip += arg
-			}
-
-		case OpJumpBackward:
-			vm.ip -= arg
-
-		case OpIn:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.In(a, b))
-
-		case OpLess:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Less(a, b))
-
-		case OpMore:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.More(a, b))
-
-		case OpLessOrEqual:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.LessOrEqual(a, b))
-
-		case OpMoreOrEqual:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.MoreOrEqual(a, b))
-
-		case OpAdd:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Add(a, b))
-
-		case OpSubtract:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Subtract(a, b))
-
-		case OpMultiply:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Multiply(a, b))
-
-		case OpDivide:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Divide(a, b))
-
-		case OpModulo:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Modulo(a, b))
-
-		case OpExponent:
-			b := vm.pop()
-			a := vm.pop()
-			vm.push(runtime.Exponent(a, b))
-
-		case OpRange:
-			b := vm.pop()
-			a := vm.pop()
-			min := runtime.ToInt(a)
-			max := runtime.ToInt(b)
-			size := max - min + 1
-			if size <= 0 {
-				size = 0
-			}
-			vm.memGrow(uint(size))
-			vm.push(runtime.MakeRange(min, max))
-
-		case OpMatches:
-			b := vm.pop()
-			a := vm.pop()
-			if runtime.IsNil(a) || runtime.IsNil(b) {
-				vm.push(false)
-				break
-			}
-			match, err := regexp.MatchString(b.(string), a.(string))
-			if err != nil {
-				panic(err)
-			}
-			vm.push(match)
-
-		case OpMatchesConst:
-			a := vm.pop()
-			if runtime.IsNil(a) {
-				vm.push(false)
-				break
-			}
-			r := program.Constants[arg].(*regexp.Regexp)
-			vm.push(r.MatchString(a.(string)))
-
-		case OpContains:
-			b := vm.pop()
-			a := vm.pop()
-			if runtime.IsNil(a) || runtime.IsNil(b) {
-				vm.push(false)
-				break
-			}
-			vm.push(strings.Contains(a.(string), b.(string)))
-
-		case OpStartsWith:
-			b := vm.pop()
-			a := vm.pop()
-			if runtime.IsNil(a) || runtime.IsNil(b) {
-				vm.push(false)
-				break
-			}
-			vm.push(strings.HasPrefix(a.(string), b.(string)))
-
-		case OpEndsWith:
-			b := vm.pop()
-			a := vm.pop()
-			if runtime.IsNil(a) || runtime.IsNil(b) {
-				vm.push(false)
-				break
-			}
-			vm.push(strings.HasSuffix(a.(string), b.(string)))
-
-		case OpSlice:
-			from := vm.pop()
-			to := vm.pop()
-			node := vm.pop()
-			vm.push(runtime.Slice(node, from, to))
 
 		case OpCall:
 			fn := reflect.ValueOf(vm.pop())
@@ -346,53 +143,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 			}
 			vm.push(out[0].Interface())
 
-		case OpCall0:
-			out, err := program.functions[arg]()
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCall1:
-			a := vm.pop()
-			out, err := program.functions[arg](a)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCall2:
-			b := vm.pop()
-			a := vm.pop()
-			out, err := program.functions[arg](a, b)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCall3:
-			c := vm.pop()
-			b := vm.pop()
-			a := vm.pop()
-			out, err := program.functions[arg](a, b, c)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
-		case OpCallN:
-			fn := vm.pop().(Function)
-			size := arg
-			in := make([]any, size)
-			for i := int(size) - 1; i >= 0; i-- {
-				in[i] = vm.pop()
-			}
-			out, err := fn(in...)
-			if err != nil {
-				panic(err)
-			}
-			vm.push(out)
-
 		case OpCallFast:
 			fn := vm.pop().(func(...any) any)
 			size := arg
@@ -402,48 +152,8 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 			}
 			vm.push(fn(in...))
 
-		case OpCallSafe:
-			fn := vm.pop().(SafeFunction)
-			size := arg
-			in := make([]any, size)
-			for i := int(size) - 1; i >= 0; i-- {
-				in[i] = vm.pop()
-			}
-			out, mem, err := fn(in...)
-			if err != nil {
-				panic(err)
-			}
-			vm.memGrow(mem)
-			vm.push(out)
-
 		case OpCallTyped:
 			vm.push(vm.call(vm.pop(), arg))
-
-		case OpCallBuiltin1:
-			vm.push(builtin.Builtins[arg].Fast(vm.pop()))
-
-		case OpArray:
-			size := vm.pop().(int)
-			vm.memGrow(uint(size))
-			array := make([]any, size)
-			for i := size - 1; i >= 0; i-- {
-				array[i] = vm.pop()
-			}
-			vm.push(array)
-
-		case OpMap:
-			size := vm.pop().(int)
-			vm.memGrow(uint(size))
-			m := make(map[string]any)
-			for i := size - 1; i >= 0; i-- {
-				value := vm.pop()
-				key := vm.pop()
-				m[key.(string)] = value
-			}
-			vm.push(m)
-
-		case OpLen:
-			vm.push(runtime.Len(vm.current()))
 
 		case OpCast:
 			switch arg {
@@ -458,90 +168,6 @@ func (vm *VM) Run(program *Program, env any) (_ any, err error) {
 		case OpDeref:
 			a := vm.pop()
 			vm.push(deref.Deref(a))
-
-		case OpIncrementIndex:
-			vm.scope().Index++
-
-		case OpDecrementIndex:
-			scope := vm.scope()
-			scope.Index--
-
-		case OpIncrementCount:
-			scope := vm.scope()
-			scope.Count++
-
-		case OpGetIndex:
-			vm.push(vm.scope().Index)
-
-		case OpGetCount:
-			scope := vm.scope()
-			vm.push(scope.Count)
-
-		case OpGetLen:
-			scope := vm.scope()
-			vm.push(scope.Len)
-
-		case OpGetAcc:
-			vm.push(vm.scope().Acc)
-
-		case OpSetAcc:
-			vm.scope().Acc = vm.pop()
-
-		case OpSetIndex:
-			scope := vm.scope()
-			scope.Index = vm.pop().(int)
-
-		case OpPointer:
-			scope := vm.scope()
-			vm.push(scope.Array.Index(scope.Index).Interface())
-
-		case OpThrow:
-			panic(vm.pop().(error))
-
-		case OpCreate:
-			switch arg {
-			case 1:
-				vm.push(make(groupBy))
-			case 2:
-				scope := vm.scope()
-				var desc bool
-				switch vm.pop().(string) {
-				case "asc":
-					desc = false
-				case "desc":
-					desc = true
-				default:
-					panic("unknown order, use asc or desc")
-				}
-				vm.push(&runtime.SortBy{
-					Desc:   desc,
-					Array:  make([]any, 0, scope.Len),
-					Values: make([]any, 0, scope.Len),
-				})
-			default:
-				panic(fmt.Sprintf("unknown OpCreate argument %v", arg))
-			}
-
-		case OpGroupBy:
-			scope := vm.scope()
-			key := vm.pop()
-			item := scope.Array.Index(scope.Index).Interface()
-			scope.Acc.(groupBy)[key] = append(scope.Acc.(groupBy)[key], item)
-
-		case OpSortBy:
-			scope := vm.scope()
-			value := vm.pop()
-			item := scope.Array.Index(scope.Index).Interface()
-			sortable := scope.Acc.(*runtime.SortBy)
-			sortable.Array = append(sortable.Array, item)
-			sortable.Values = append(sortable.Values, value)
-
-		case OpSort:
-			scope := vm.scope()
-			sortable := scope.Acc.(*runtime.SortBy)
-			sort.Sort(sortable)
-			vm.memGrow(uint(scope.Len))
-			vm.push(sortable.Array)
 
 		case OpProfileStart:
 			span := program.Constants[arg].(*Span)
